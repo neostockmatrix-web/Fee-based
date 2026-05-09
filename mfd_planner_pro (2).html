@@ -1,0 +1,2068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MFD Planner Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --ink:#1a1a2e;--ink-l:#4a4a6a;--ink-m:#8888aa;
+  --gold:#c9a84c;--gold-l:#f0e0b0;--gold-p:#fdf8ee;--gold-d:#9a7a28;
+  --teal:#0f6e56;--teal-l:#e1f5ee;
+  --surf:#fff;--bg:#f5f3ee;--bdr:#e0dcd0;
+  --danger:#a32d2d;--danger-l:#fcebeb;
+  --amber:#b86b00;--amber-l:#fff8ec;--amber-b:#ffecc0;
+  --flag:#7b3fa0;--flag-l:#f5edfc;
+  --ok:#0f6e56;--ok-l:#e1f5ee;
+  --r:10px;--sh:0 1px 10px rgba(26,26,46,0.07);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6;min-height:100vh}
+
+/* HEADER */
+.hdr{background:var(--ink);color:#fff;padding:14px 22px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;box-shadow:0 2px 16px rgba(0,0,0,.3)}
+.hdr-brand{display:flex;align-items:center;gap:12px}
+.hdr-logo{width:32px;height:32px;border-radius:6px;object-fit:contain;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:16px;overflow:hidden}
+.hdr-logo img{width:100%;height:100%;object-fit:contain;display:none}
+.hdr-logo-placeholder{font-size:16px}
+.hdr-title{font-family:'Playfair Display',serif;font-size:17px;font-weight:600}
+.hdr-sub{font-size:10px;color:rgba(255,255,255,.4);margin-top:1px}
+.hdr-acts{display:flex;gap:7px;align-items:center}
+
+/* BUTTONS */
+.btn{padding:6px 14px;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:5px;transition:all .15s;white-space:nowrap}
+.btn-gold{background:var(--gold);color:var(--ink)}
+.btn-gold:hover{background:#b89038}
+.btn-ghost{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.18)}
+.btn-ghost:hover{background:rgba(255,255,255,.18)}
+.btn-teal{background:var(--teal);color:#fff}
+.btn-teal:hover{background:#0a5240}
+.btn-outline{background:transparent;color:var(--ink);border:1px solid var(--bdr)}
+.btn-outline:hover{background:var(--gold-p);border-color:var(--gold)}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-danger:hover{background:#8b1a1a}
+.btn-sm{padding:4px 10px;font-size:11px}
+.btn-flag{background:var(--flag-l);color:var(--flag);border:1px solid #d4b8e8}
+.btn-flag:hover{background:#ecdcf8}
+.btn-flag.active{background:var(--flag);color:#fff}
+
+/* LAYOUT */
+.body{display:flex;min-height:calc(100vh - 56px)}
+
+/* SIDEBAR */
+.side{width:224px;min-width:224px;background:var(--ink);padding:16px 0 40px;display:flex;flex-direction:column;gap:1px;position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto}
+.side-lbl{font-size:9.5px;font-weight:500;letter-spacing:1.4px;color:rgba(255,255,255,.28);padding:12px 16px 4px;text-transform:uppercase}
+.side-item{padding:8px 16px;cursor:pointer;border-left:3px solid transparent;font-size:12.5px;color:rgba(255,255,255,.52);display:flex;align-items:center;justify-content:space-between;gap:8px;transition:all .15s}
+.side-item:hover{background:rgba(255,255,255,.06);color:#fff}
+.side-item.active{background:rgba(201,168,76,.12);border-left-color:var(--gold);color:var(--gold);font-weight:500}
+.side-pill{font-size:9.5px;background:rgba(255,255,255,.09);color:rgba(255,255,255,.45);padding:1px 7px;border-radius:20px;white-space:nowrap}
+.side-item.active .side-pill{background:rgba(201,168,76,.2);color:var(--gold)}
+.side-status{font-size:9px;padding:2px 7px;border-radius:20px;font-weight:500;white-space:nowrap}
+.ss-ns{background:rgba(255,255,255,.07);color:rgba(255,255,255,.3)}
+.ss-ip{background:rgba(201,168,76,.18);color:var(--gold)}
+.ss-done{background:rgba(15,110,86,.25);color:#4dd4a8}
+.side-div{height:1px;background:rgba(255,255,255,.07);margin:5px 0}
+.core-q{font-size:9.5px;color:rgba(255,255,255,.25);padding:0 16px 10px;font-style:italic;line-height:1.4;margin-top:-2px}
+.pending-badge{background:var(--flag);color:#fff;font-size:9px;padding:1px 6px;border-radius:20px;font-weight:600}
+
+/* CLIENT BAR */
+.cbar{background:var(--gold-p);border-bottom:1px solid var(--gold-l);padding:9px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.cbar-field{display:flex;align-items:center;gap:6px}
+.cbar label{font-size:9.5px;font-weight:500;color:var(--ink-l);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+.cbar input,.cbar select{border:1px solid var(--bdr);border-radius:5px;padding:4px 9px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--ink);background:#fff;outline:none}
+.cbar input{width:150px}
+.cbar input:focus,.cbar select:focus{border-color:var(--gold)}
+.cbar-div{width:1px;height:24px;background:var(--bdr)}
+
+/* SESSION TIMER */
+.timer-bar{background:var(--ink);color:rgba(255,255,255,.6);font-size:11px;padding:4px 20px;display:flex;align-items:center;gap:16px}
+.timer-active{color:var(--gold);font-weight:500}
+.timer-warn{color:#f87171}
+
+/* MAIN */
+.main{flex:1;overflow-y:auto}
+.view{display:none;padding:20px 22px}
+.view.active{display:block}
+
+/* SCOPE REMINDER CARD */
+.scope-card{background:var(--amber-l);border:1px solid var(--amber-b);border-radius:var(--r);padding:11px 16px;margin-bottom:14px;display:flex;gap:10px;align-items:flex-start}
+.scope-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.scope-card h4{font-size:11px;font-weight:600;color:var(--amber);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.scope-card p{font-size:11.5px;color:#7a4800;line-height:1.5}
+
+/* PLAN HERO */
+.hero{border-radius:var(--r);overflow:hidden;margin-bottom:14px}
+.hero-top{background:var(--ink);padding:18px 22px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.hero-top h2{font-family:'Playfair Display',serif;font-size:19px;font-weight:600;color:#fff;margin-bottom:3px}
+.hero-top .tagline{font-size:11px;color:rgba(255,255,255,.42)}
+.fee-tag{background:var(--gold);color:var(--ink);font-size:16px;font-weight:700;font-family:'Playfair Display',serif;padding:6px 14px;border-radius:7px;white-space:nowrap;flex-shrink:0}
+.hero-q{background:var(--gold-p);border:1px solid var(--gold-l);border-top:none;padding:10px 22px;font-size:12px;color:#8a6a1a;display:flex;align-items:center;gap:8px}
+.hero-q strong{color:var(--ink)}
+.hero-status{display:flex;gap:8px;align-items:center;padding:8px 22px;background:#f8f6f1;border:1px solid var(--gold-l);border-top:none}
+.status-btn{font-size:11px;padding:3px 11px;border-radius:20px;cursor:pointer;border:1px solid var(--bdr);background:#fff;color:var(--ink-m);font-family:'DM Sans',sans-serif;transition:all .15s}
+.status-btn:hover{border-color:var(--gold)}
+.status-btn.ns.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.status-btn.ip.active{background:var(--amber);color:#fff;border-color:var(--amber)}
+.status-btn.done.active{background:var(--teal);color:#fff;border-color:var(--teal)}
+
+/* PROGRESS */
+.prog-bar{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r);padding:10px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px}
+.prog-pct{font-size:18px;font-weight:600;color:var(--teal);font-family:'Playfair Display',serif;min-width:40px}
+.prog-track{flex:1;height:6px;background:var(--bdr);border-radius:20px;overflow:hidden}
+.prog-fill{height:100%;background:var(--teal);border-radius:20px;transition:width .4s}
+.prog-lbl{font-size:11px;color:var(--ink-m);white-space:nowrap}
+
+/* SECTION */
+.section{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:12px;overflow:hidden}
+.sec-hdr{background:var(--gold-p);border-bottom:1px solid var(--gold-l);padding:10px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
+.sec-hdr:hover{background:#f5e8c8}
+.sec-num{width:22px;height:22px;background:var(--gold);color:var(--ink);border-radius:50%;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
+.sec-num.done{background:var(--teal);color:#fff}
+.sec-title{font-family:'Playfair Display',serif;font-size:13.5px;font-weight:600;color:var(--ink);flex:1}
+.sec-obs-btn{font-size:10px;padding:2px 9px;border-radius:20px;background:var(--teal-l);color:var(--teal);border:1px solid #b0d8c8;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap}
+.sec-obs-btn:hover{background:#c0e8d8}
+.sec-obs-btn.has-note{background:var(--teal);color:#fff;border-color:var(--teal)}
+.sec-count{font-size:11px;color:var(--ink-m)}
+.sec-arrow{font-size:13px;color:var(--ink-m);transition:transform .2s}
+.sec-arrow.open{transform:rotate(180deg)}
+.sec-body{padding:0}
+.sec-body.closed{display:none}
+
+/* SECTION OBSERVATION */
+.sec-obs-panel{border-top:1px solid var(--bdr);background:#f9f8f5;padding:12px 16px;display:none}
+.sec-obs-panel.open{display:block}
+.sec-obs-panel label{font-size:10px;font-weight:500;color:var(--ink-l);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px}
+.sec-obs-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sec-obs-field{display:flex;flex-direction:column;gap:3px}
+.sec-obs-field.full{grid-column:1/-1}
+.obs-lbl-chip{display:inline-block;font-size:9px;font-weight:600;padding:1px 7px;border-radius:20px;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}
+.chip-obs{background:#e6f1fb;color:#0c447c}
+.chip-act{background:var(--teal-l);color:var(--teal)}
+.sec-obs-panel textarea{width:100%;border:1px solid var(--bdr);border-radius:5px;padding:7px 9px;font-family:'DM Sans',sans-serif;font-size:11.5px;color:var(--ink);resize:vertical;min-height:52px;outline:none;background:#fff}
+.sec-obs-panel textarea:focus{border-color:var(--teal)}
+
+/* ITEMS */
+.item{display:flex;align-items:flex-start;gap:10px;padding:10px 16px;border-bottom:1px solid var(--bdr);transition:background .12s}
+.item:last-child{border-bottom:none}
+.item:hover{background:var(--gold-p)}
+.item.done{background:var(--ok-l)}
+.item.done:hover{background:#c8e8dc}
+.item-main{display:flex;align-items:flex-start;gap:10px;cursor:pointer;flex:1;min-width:0}
+.chk{width:17px;height:17px;border:1.5px solid var(--bdr);border-radius:4px;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;background:#fff;transition:all .2s}
+.item.done .chk{background:var(--teal);border-color:var(--teal)}
+.tick{display:none;color:#fff;font-size:10px;font-weight:700}
+.item.done .tick{display:block}
+.ic{flex:1;min-width:0}
+.it{font-size:12.5px;font-weight:500;color:var(--ink);line-height:1.35}
+.item.done .it{color:var(--ok);text-decoration:line-through;text-decoration-color:rgba(15,110,86,.35)}
+.id{font-size:11px;color:var(--ink-m);margin-top:2px;line-height:1.45}
+.item-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px;align-items:center}
+.tag{display:inline-block;font-size:9.5px;font-weight:500;padding:1px 7px;border-radius:20px}
+.tag-planner{background:var(--teal-l);color:var(--ok)}
+.tag-client{background:#e6f1fb;color:#0c447c}
+.tag-warn{background:var(--danger-l);color:var(--danger)}
+.tag-rev{background:var(--gold-p);color:#8a6a1a}
+.tag-admin{background:#f1efe8;color:#5f5e5a}
+.tag-clarity{background:#e8e0f8;color:#6030a0;font-size:9px}
+.item-actions{display:flex;gap:5px;align-items:flex-start;flex-shrink:0}
+.flag-btn{width:24px;height:24px;border-radius:5px;border:1px solid var(--bdr);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .15s;flex-shrink:0}
+.flag-btn:hover{background:var(--flag-l);border-color:#d4b8e8}
+.flag-btn.active{background:var(--flag);border-color:var(--flag)}
+.note-btn{width:24px;height:24px;border-radius:5px;border:1px solid var(--bdr);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;transition:all .15s;flex-shrink:0}
+.note-btn:hover{background:var(--teal-l);border-color:#b0d8c8}
+.note-btn.has-note{background:var(--teal-l);border-color:var(--teal);color:var(--teal)}
+
+/* ITEM NOTE */
+.item-note-panel{display:none;padding:0 16px 10px 43px;background:inherit}
+.item-note-panel.open{display:block}
+.item-note-panel textarea{width:100%;border:1px solid var(--bdr);border-radius:5px;padding:7px 9px;font-family:'DM Sans',sans-serif;font-size:11.5px;color:var(--ink);resize:vertical;min-height:50px;outline:none;background:#fff}
+.item-note-panel textarea:focus{border-color:var(--gold)}
+.note-hint{font-size:10px;color:var(--ink-m);margin-bottom:4px;font-style:italic}
+
+/* BIGGEST CONCERN */
+.concern-section{background:var(--amber-l);border:2px solid var(--amber-b);border-radius:var(--r);padding:14px 18px;margin-bottom:12px}
+.concern-section h4{font-family:'Playfair Display',serif;font-size:14px;font-weight:600;color:var(--amber);margin-bottom:3px;display:flex;align-items:center;gap:7px}
+.concern-section p{font-size:11.5px;color:#7a4800;margin-bottom:10px;line-height:1.5}
+.concern-section textarea{width:100%;border:1.5px solid var(--amber-b);border-radius:6px;padding:9px 11px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);resize:vertical;min-height:70px;outline:none;background:#fffcf5;font-style:italic}
+.concern-section textarea:focus{border-color:var(--amber)}
+
+/* OUTPUT CARD */
+.obs-card{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r);padding:14px 16px;margin-top:12px}
+.obs-card h3{font-family:'Playfair Display',serif;font-size:13.5px;font-weight:600;margin-bottom:12px;color:var(--ink)}
+.obs-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.obs-field label{font-size:9.5px;font-weight:500;color:var(--ink-l);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:3px}
+.obs-field textarea,.obs-field input[type=text]{width:100%;border:1px solid var(--bdr);border-radius:5px;padding:7px 9px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--ink);resize:vertical;min-height:52px;outline:none;background:#fff}
+.obs-field textarea:focus,.obs-field input[type=text]:focus{border-color:var(--gold)}
+.obs-field.full{grid-column:1/-1}
+.priority-inputs{display:flex;flex-direction:column;gap:5px}
+.priority-row{display:flex;align-items:center;gap:7px}
+.priority-num{width:20px;height:20px;background:var(--gold);color:var(--ink);border-radius:50%;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.priority-row input{flex:1;border:1px solid var(--bdr);border-radius:5px;padding:6px 9px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--ink);outline:none;background:#fff}
+.priority-row input:focus{border-color:var(--gold)}
+
+/* QUARTERLY SECTIONS */
+.quarter-block{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r);margin-bottom:12px;overflow:hidden}
+.quarter-hdr{background:var(--ink);padding:10px 16px;display:flex;align-items:center;justify-content:space-between}
+.quarter-hdr h4{font-family:'Playfair Display',serif;font-size:13px;color:#fff;font-weight:600}
+.quarter-date{display:flex;align-items:center;gap:7px}
+.quarter-date label{font-size:10px;color:rgba(255,255,255,.4)}
+.quarter-date input{border:1px solid rgba(255,255,255,.2);border-radius:4px;padding:3px 7px;font-family:'DM Sans',sans-serif;font-size:11px;color:#fff;background:rgba(255,255,255,.1);outline:none;width:130px}
+.quarter-date input:focus{border-color:var(--gold)}
+
+/* PENDING LIST */
+.pending-card{background:var(--flag-l);border:1px solid #d4b8e8;border-radius:var(--r);padding:12px 16px;margin-bottom:14px}
+.pending-card h3{font-size:12px;font-weight:600;color:var(--flag);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.pending-item{font-size:11.5px;color:var(--ink);padding:4px 0;border-bottom:1px solid #e8d0f5;display:flex;align-items:flex-start;gap:7px}
+.pending-item:last-child{border-bottom:none}
+.pending-item span{color:var(--ink-m)}
+.pending-empty{font-size:11px;color:var(--ink-m);font-style:italic}
+
+/* SUMMARY */
+.sum-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:18px}
+.sum-stat{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r);padding:12px 14px}
+.sum-val{font-size:24px;font-weight:700;font-family:'Playfair Display',serif;color:var(--teal)}
+.sum-lbl{font-size:9.5px;color:var(--ink-m);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.plan-sum{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden;margin-bottom:10px}
+.plan-sum-hdr{background:var(--ink);color:#fff;padding:9px 14px;display:flex;align-items:center;justify-content:space-between}
+.plan-sum-hdr span{font-size:12.5px;font-weight:500}
+.plan-sum-pct{font-size:10.5px;background:rgba(255,255,255,.1);padding:2px 9px;border-radius:20px}
+.plan-sum-body{padding:10px 14px}
+.ph-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:.5px solid var(--bdr);font-size:11.5px}
+.ph-row:last-child{border-bottom:none}
+.ph-row .ph-name{color:var(--ink-l);flex:1}
+.ph-row .mini-bar{width:70px;height:4px;background:var(--bdr);border-radius:20px;overflow:hidden;margin:0 8px}
+.ph-row .mini-fill{height:100%;background:var(--teal);border-radius:20px}
+.ph-row .ph-ct{color:var(--teal);font-weight:500;min-width:30px;text-align:right}
+
+/* MODALS */
+.overlay{position:fixed;inset:0;background:rgba(26,26,46,.55);z-index:1000;display:none;align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.modal{background:#fff;border-radius:12px;padding:24px;width:460px;max-width:92vw;max-height:90vh;overflow-y:auto}
+.modal h3{font-family:'Playfair Display',serif;font-size:16px;margin-bottom:5px}
+.modal p{font-size:12px;color:var(--ink-l);margin-bottom:14px}
+.modal textarea{width:100%;min-height:160px;border:1px solid var(--bdr);border-radius:6px;padding:9px 11px;font-family:monospace;font-size:11px;color:var(--ink);resize:vertical;outline:none}
+.modal-acts{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+.modal-field{margin-bottom:12px}
+.modal-field label{font-size:10px;font-weight:500;color:var(--ink-l);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:4px}
+.modal-field input,.modal-field textarea,.modal-field select{width:100%;border:1px solid var(--bdr);border-radius:6px;padding:7px 10px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink);outline:none;background:#fff}
+.modal-field input:focus,.modal-field textarea:focus,.modal-field select:focus{border-color:var(--gold)}
+.logo-preview{width:60px;height:60px;border:2px dashed var(--bdr);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:8px;background:#f8f6f1;overflow:hidden}
+.logo-preview img{width:100%;height:100%;object-fit:contain}
+.settings-section{border-bottom:1px solid var(--bdr);padding-bottom:14px;margin-bottom:14px}
+.settings-section h4{font-size:11px;font-weight:600;color:var(--ink-l);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.pdf-choice-btn{padding:10px 14px;border:1.5px solid var(--bdr);border-radius:8px;cursor:pointer;background:#fff;text-align:left;width:100%;font-family:'DM Sans',sans-serif;transition:all .15s;margin-bottom:7px}
+.pdf-choice-btn:hover{border-color:var(--gold);background:var(--gold-p)}
+.pdf-choice-btn.selected{border-color:var(--teal);background:var(--teal-l)}
+.pdf-choice-btn strong{font-size:13px;display:block;margin-bottom:2px}
+.pdf-choice-btn span{font-size:11px;color:var(--ink-m)}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--ink);color:#fff;padding:9px 16px;border-radius:7px;font-size:12px;transform:translateY(60px);opacity:0;transition:all .3s;z-index:9999;pointer-events:none;max-width:300px}
+.toast.show{transform:translateY(0);opacity:1}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="hdr-brand">
+    <div class="hdr-logo" id="hdr-logo-wrap">
+      <img id="hdr-logo-img" src="" alt="">
+      <span class="hdr-logo-placeholder" id="hdr-logo-ph">📊</span>
+    </div>
+    <div>
+      <div class="hdr-title" id="hdr-practice-name">MFD Planner Pro</div>
+      <div class="hdr-sub">Clarity · Complete · Partner — purpose-first workflow</div>
+    </div>
+  </div>
+  <div class="hdr-acts">
+    <button class="btn btn-ghost" onclick="openModal('settings-modal')">⚙ Settings</button>
+    <button class="btn btn-ghost" onclick="openModal('import-modal')">↑ Load JSON</button>
+    <button class="btn btn-ghost" onclick="exportJSON()">↓ Save JSON</button>
+    <button class="btn btn-teal" onclick="openPDFChooser()">⎙ PDF Report</button>
+    <button class="btn btn-gold" onclick="newClient()">↺ New Client</button>
+  </div>
+</header>
+
+<div class="body">
+  <nav class="side">
+    <div class="side-lbl">Dashboard</div>
+    <div class="side-item active" onclick="showView('summary')" id="nav-summary">
+      All plans <span class="side-pill" id="pill-all">0%</span>
+    </div>
+    <div class="side-div"></div>
+    <div class="side-lbl">Clarity Plan</div>
+    <div class="core-q">"Where am I financially?"</div>
+    <div class="side-item" onclick="showView('plan1')" id="nav-plan1">
+      Clarity <span class="side-pill" id="pill-plan1">0%</span>
+      <span class="side-status ss-ns" id="ss-plan1">Not started</span>
+    </div>
+    <div class="side-div"></div>
+    <div class="side-lbl">Complete Plan</div>
+    <div class="core-q">"What exactly should I do?"</div>
+    <div class="side-item" onclick="showView('plan2')" id="nav-plan2">
+      Complete <span class="side-pill" id="pill-plan2">0%</span>
+      <span class="side-status ss-ns" id="ss-plan2">Not started</span>
+    </div>
+    <div class="side-div"></div>
+    <div class="side-lbl">Partner Plan</div>
+    <div class="core-q">"How do I stay on track?"</div>
+    <div class="side-item" onclick="showView('plan3')" id="nav-plan3">
+      Partner <span class="side-pill" id="pill-plan3">0%</span>
+      <span class="side-status ss-ns" id="ss-plan3">Not started</span>
+    </div>
+    <div class="side-div"></div>
+    <div class="side-lbl">Follow-ups</div>
+    <div class="side-item" onclick="showView('pending')" id="nav-pending">
+      Flagged items <span class="pending-badge" id="pending-count" style="display:none">0</span>
+    </div>
+  </nav>
+
+  <div class="main">
+
+    <!-- CLIENT BAR -->
+    <div class="cbar">
+      <div class="cbar-field"><label>Client</label><input type="text" id="c-name" placeholder="e.g. Ramesh & Priya Sharma" oninput="syncClient()"></div>
+      <div class="cbar-field"><label>Referred by</label><input type="text" id="c-ref" placeholder="e.g. Suresh Shah" style="width:130px" oninput="syncClient()"></div>
+      <div class="cbar-div"></div>
+      <div class="cbar-field"><label>Plan engaged</label>
+        <select id="c-plan" onchange="syncPlanNav()">
+          <option value="">— select —</option>
+          <option value="plan1">Clarity (₹2,500)</option>
+          <option value="plan2">Complete (₹8,000)</option>
+          <option value="plan3">Partner (₹15,000/yr)</option>
+        </select>
+      </div>
+      <div class="cbar-field"><label>Risk profile</label>
+        <select id="c-risk" onchange="syncClient()">
+          <option value="">— select —</option>
+          <option value="Conservative">Conservative</option>
+          <option value="Moderate">Moderate</option>
+          <option value="Aggressive">Aggressive</option>
+        </select>
+      </div>
+      <div class="cbar-div"></div>
+      <div class="cbar-field"><label>Date</label><input type="date" id="c-date" style="width:130px" oninput="syncClient()"></div>
+    </div>
+
+    <!-- SESSION TIMER -->
+    <div class="timer-bar" id="timer-bar">
+      <span id="timer-label">⏱ Session timer</span>
+      <button class="btn btn-sm btn-ghost" id="timer-start-btn" onclick="startTimer()">Start</button>
+      <button class="btn btn-sm btn-ghost" id="timer-stop-btn" onclick="stopTimer()" style="display:none">Stop</button>
+      <span id="timer-display" style="display:none"></span>
+      <span id="timer-started" style="color:rgba(255,255,255,.35);font-size:10px"></span>
+      <span id="timer-ended" style="color:rgba(255,255,255,.35);font-size:10px"></span>
+    </div>
+
+    <!-- SUMMARY -->
+    <div class="view active" id="view-summary">
+      <div class="sum-grid">
+        <div class="sum-stat"><div class="sum-val" id="s-done">0</div><div class="sum-lbl">Steps done</div></div>
+        <div class="sum-stat"><div class="sum-val" id="s-total">0</div><div class="sum-lbl">Total steps</div></div>
+        <div class="sum-stat"><div class="sum-val" id="s-pct">0%</div><div class="sum-lbl">Overall</div></div>
+        <div class="sum-stat"><div class="sum-val" id="s-plan">—</div><div class="sum-lbl">Active plan</div></div>
+        <div class="sum-stat"><div class="sum-val" id="s-flags">0</div><div class="sum-lbl">Flagged items</div></div>
+      </div>
+      <div id="sum-cards"></div>
+    </div>
+
+    <!-- CLARITY PLAN -->
+    <div class="view" id="view-plan1">
+      <div class="scope-card">
+        <div class="scope-icon">⚠️</div>
+        <div>
+          <h4>Scope reminder — Clarity Plan</h4>
+          <p>This plan does <strong>NOT</strong> include: net worth calculation, SIP amount recommendations, retirement projections, portfolio restructuring, or tax planning. Keep it light, conversational, and practical. One session, 90 minutes max.</p>
+        </div>
+      </div>
+      <div class="hero">
+        <div class="hero-top">
+          <div>
+            <h2>Clarity Plan</h2>
+            <div class="tagline">Financial health check · Single session · Light, conversational, practical</div>
+          </div>
+          <div class="fee-tag">₹2,500</div>
+        </div>
+        <div class="hero-q">Core question: <strong>"Where am I financially right now?"</strong></div>
+        <div class="hero-status">
+          <span style="font-size:11px;color:var(--ink-m);margin-right:6px">Session status:</span>
+          <button class="status-btn ns" id="sb1-ns" onclick="setStatus('plan1','ns')">Not started</button>
+          <button class="status-btn ip" id="sb1-ip" onclick="setStatus('plan1','ip')">In progress</button>
+          <button class="status-btn done" id="sb1-done" onclick="setStatus('plan1','done')">Completed</button>
+        </div>
+      </div>
+      <div class="prog-bar">
+        <div class="prog-pct" id="pct-plan1">0%</div>
+        <div class="prog-track"><div class="prog-fill" id="bar-plan1" style="width:0%"></div></div>
+        <div class="prog-lbl" id="cnt-plan1">0 / 0 steps</div>
+      </div>
+      <div id="cl-plan1"></div>
+      <!-- Biggest concern as special card -->
+      <div class="concern-section">
+        <h4>🔴 F — Biggest concern (emotional heart of the session)</h4>
+        <p>Let the client speak without interruption. Capture their exact words. This shapes everything you recommend. Do not rush this section.</p>
+        <div style="margin-bottom:10px">
+          <div class="note-hint">What is the client's #1 worry right now?</div>
+          <textarea id="concern-biggest" placeholder="e.g. 'I'm 42 and I feel like I'm running out of time. My parents had nothing when they retired and I don't want that for myself.'"></textarea>
+        </div>
+        <div>
+          <div class="note-hint">Emotion behind the concern (fear / confusion / guilt / urgency / shame):</div>
+          <textarea id="concern-emotion" placeholder="e.g. Fear of becoming dependent on children. Guilt about not starting earlier." style="min-height:40px"></textarea>
+        </div>
+      </div>
+      <div class="obs-card">
+        <h3>Session outputs — what the client leaves with</h3>
+        <div class="obs-grid">
+          <div class="obs-field full">
+            <label>3 Priority actions (numbered, specific, actionable within 30 days)</label>
+            <div class="priority-inputs">
+              <div class="priority-row"><div class="priority-num">1</div><input type="text" id="pri1-p1" placeholder="e.g. Buy ₹1 Cr term plan immediately — use PolicyBazaar, 30-year tenure"></div>
+              <div class="priority-row"><div class="priority-num">2</div><input type="text" id="pri2-p1" placeholder="e.g. Start ₹5,000/month SIP for emergency fund — liquid fund"></div>
+              <div class="priority-row"><div class="priority-num">3</div><input type="text" id="pri3-p1" placeholder="e.g. Port health insurance to family floater — ₹10L minimum"></div>
+            </div>
+          </div>
+          <div class="obs-field"><label>Insurance observation</label><textarea id="ins-p1" placeholder="Under-covered / over-paying on LIC / no health top-up..."></textarea></div>
+          <div class="obs-field"><label>SIP / investment observation</label><textarea id="sip-p1" placeholder="Investing systematically? Too little? Wrong category?"></textarea></div>
+          <div class="obs-field"><label>Emergency fund observation</label><textarea id="efund-p1" placeholder="Have 3–6 months expenses? Where is it parked?"></textarea></div>
+          <div class="obs-field"><label>Upgrade flag — Complete Plan candidate?</label><textarea id="upgrade-p1" placeholder="Is this client a candidate for the Complete Plan? Why?"></textarea></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COMPLETE PLAN -->
+    <div class="view" id="view-plan2">
+      <div class="scope-card">
+        <div class="scope-icon">⚠️</div>
+        <div>
+          <h4>Scope reminder — Complete Plan</h4>
+          <p>Includes everything in Clarity <em>plus</em>: net worth statement, goal calculations with numbers, formal insurance HLV, portfolio restructuring, implementation sequence. Two sessions. Written plan delivered. Watch for <span class="tag tag-clarity">clarity already covered</span> labels on overlapping areas.</p>
+        </div>
+      </div>
+      <div class="hero">
+        <div class="hero-top">
+          <div>
+            <h2>Complete Financial Plan</h2>
+            <div class="tagline">Full structuring · Two sessions · Detailed written plan · Deep analysis</div>
+          </div>
+          <div class="fee-tag">₹8,000</div>
+        </div>
+        <div class="hero-q">Core question: <strong>"What exactly should I do — and in what order?"</strong></div>
+        <div class="hero-status">
+          <span style="font-size:11px;color:var(--ink-m);margin-right:6px">Session status:</span>
+          <button class="status-btn ns" id="sb2-ns" onclick="setStatus('plan2','ns')">Not started</button>
+          <button class="status-btn ip" id="sb2-ip" onclick="setStatus('plan2','ip')">In progress</button>
+          <button class="status-btn done" id="sb2-done" onclick="setStatus('plan2','done')">Completed</button>
+        </div>
+      </div>
+      <div class="prog-bar">
+        <div class="prog-pct" id="pct-plan2">0%</div>
+        <div class="prog-track"><div class="prog-fill" id="bar-plan2" style="width:0%"></div></div>
+        <div class="prog-lbl" id="cnt-plan2">0 / 0 steps</div>
+      </div>
+      <div id="cl-plan2"></div>
+      <div class="obs-card">
+        <h3>Plan outputs — structured conclusions</h3>
+        <div class="obs-grid">
+          <div class="obs-field"><label>Net worth (approx)</label><textarea id="nw-p2" placeholder="Assets: ₹___ | Liabilities: ₹___ | Net: ₹___"></textarea></div>
+          <div class="obs-field"><label>Risk profile assigned</label><textarea id="risk-p2" placeholder="Conservative / Moderate / Aggressive — and why"></textarea></div>
+          <div class="obs-field"><label>Insurance gaps found</label><textarea id="ins-p2" placeholder="Term shortfall, health gaps, no critical illness..."></textarea></div>
+          <div class="obs-field"><label>Top behavioural flag</label><textarea id="beh-p2" placeholder="Panic seller? Over-insured in LIC? Ignoring retirement?"></textarea></div>
+          <div class="obs-field full"><label>Implementation sequence (first → second → third)</label><textarea id="impl-p2" placeholder="1. Cancel bad LIC  2. Buy term plan  3. Start SIPs  4. Build emergency fund..."></textarea></div>
+          <div class="obs-field full"><label>Partner Plan pitch note</label><textarea id="partner-p2" placeholder="Why does this client need ongoing hand-holding? What will drift without quarterly review?"></textarea></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PARTNER PLAN -->
+    <div class="view" id="view-plan3">
+      <div class="scope-card">
+        <div class="scope-icon">⚠️</div>
+        <div>
+          <h4>Scope reminder — Partner Plan</h4>
+          <p>This is <strong>NOT</strong> a bigger report. It is continuity + accountability. Each quarterly section is independently completable — you will return to this checklist 4 times across the year. Date-stamp each quarter when completed.</p>
+        </div>
+      </div>
+      <div class="hero">
+        <div class="hero-top">
+          <div>
+            <h2>Partner Plan</h2>
+            <div class="tagline">Ongoing coordination · Quarterly reviews · Accountability · Life changes</div>
+          </div>
+          <div class="fee-tag">₹15,000/yr</div>
+        </div>
+        <div class="hero-q">Core question: <strong>"How do I stay on track over time?"</strong></div>
+        <div class="hero-status">
+          <span style="font-size:11px;color:var(--ink-m);margin-right:6px">Session status:</span>
+          <button class="status-btn ns" id="sb3-ns" onclick="setStatus('plan3','ns')">Not started</button>
+          <button class="status-btn ip" id="sb3-ip" onclick="setStatus('plan3','ip')">In progress</button>
+          <button class="status-btn done" id="sb3-done" onclick="setStatus('plan3','done')">Completed</button>
+        </div>
+      </div>
+      <div class="prog-bar">
+        <div class="prog-pct" id="pct-plan3">0%</div>
+        <div class="prog-track"><div class="prog-fill" id="bar-plan3" style="width:0%"></div></div>
+        <div class="prog-lbl" id="cnt-plan3">0 / 0 steps</div>
+      </div>
+      <div id="cl-plan3"></div>
+      <div class="obs-card">
+        <h3>Annual tracker notes</h3>
+        <div class="obs-grid">
+          <div class="obs-field"><label>SIPs running (this year)</label><textarea id="sip-p3" placeholder="List active SIPs, amounts, fund names..."></textarea></div>
+          <div class="obs-field"><label>Key life changes this year</label><textarea id="life-p3" placeholder="New baby, job change, salary hike, property bought..."></textarea></div>
+          <div class="obs-field full"><label>Biggest risk to staying on track</label><textarea id="risk-p3" placeholder="Behavioural drift, large upcoming expense, loan burden..."></textarea></div>
+          <div class="obs-field full"><label>Renewal note & value delivered</label><textarea id="renew-p3" placeholder="What did we actually achieve this year? Use this for the renewal conversation."></textarea></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PENDING / FLAGGED -->
+    <div class="view" id="view-pending">
+      <div style="margin-bottom:14px">
+        <h2 style="font-family:'Playfair Display',serif;font-size:18px;margin-bottom:4px">Flagged items — pending follow-up</h2>
+        <p style="font-size:12px;color:var(--ink-m)">Items you've marked for callback, document collection, or further discussion.</p>
+      </div>
+      <div id="pending-list"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- IMPORT MODAL -->
+<div class="overlay" id="import-modal">
+  <div class="modal">
+    <h3>Load saved checklist</h3>
+    <p>Paste previously exported JSON to restore a client's full state.</p>
+    <textarea id="imp-json" placeholder='{"client":{"name":"..."},"checked":{},...}'></textarea>
+    <div class="modal-acts">
+      <button class="btn btn-outline" onclick="closeModal('import-modal')">Cancel</button>
+      <button class="btn btn-teal" onclick="doImport()">Load</button>
+    </div>
+  </div>
+</div>
+
+<!-- PDF CHOOSER MODAL -->
+<div class="overlay" id="pdf-modal">
+  <div class="modal">
+    <h3>Generate PDF report</h3>
+    <p>Choose which plan to generate a client-facing report for. Only that plan's checked items and observations will appear in the PDF.</p>
+    <button class="pdf-choice-btn" id="pdf-btn-plan1" onclick="generatePDF('plan1')">
+      <strong>Clarity Plan</strong>
+      <span>Financial health check — single session summary</span>
+    </button>
+    <button class="pdf-choice-btn" id="pdf-btn-plan2" onclick="generatePDF('plan2')">
+      <strong>Complete Financial Plan</strong>
+      <span>Full analysis with goals, insurance, and implementation sequence</span>
+    </button>
+    <button class="pdf-choice-btn" id="pdf-btn-plan3" onclick="generatePDF('plan3')">
+      <strong>Partner Plan</strong>
+      <span>Quarterly review and annual tracker report</span>
+    </button>
+    <div class="modal-acts">
+      <button class="btn btn-outline" onclick="closeModal('pdf-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="overlay" id="settings-modal">
+  <div class="modal" style="width:500px">
+    <h3>Practice settings</h3>
+    <p>Customise the tool and PDF cover page for your practice.</p>
+    <div class="settings-section">
+      <h4>Practice identity</h4>
+      <div class="modal-field"><label>Practice / firm name</label><input type="text" id="s-practice" placeholder="e.g. Wealth Compass Financial Planning"></div>
+      <div class="modal-field"><label>Planner name</label><input type="text" id="s-planner" placeholder="e.g. Vikram Nair, CFP®"></div>
+      <div class="modal-field"><label>Contact / tagline for PDF footer</label><input type="text" id="s-contact" placeholder="e.g. vikram@wealthcompass.in · +91 98765 43210"></div>
+      <div class="modal-field"><label>PDF disclaimer</label><textarea id="s-disclaimer" style="min-height:52px;resize:vertical" placeholder="e.g. This report is prepared for discussion purposes only. It is not SEBI-registered investment advice.">This report is prepared for discussion purposes only. It does not constitute SEBI-registered investment advice. Please consult a SEBI-registered investment advisor for personalised financial decisions.</textarea></div>
+    </div>
+    <div class="settings-section">
+      <h4>Logo</h4>
+      <div class="logo-preview" id="logo-preview">📊</div>
+      <input type="file" id="logo-upload" accept="image/*" style="display:none" onchange="uploadLogo(this)">
+      <button class="btn btn-outline btn-sm" onclick="document.getElementById('logo-upload').click()">Upload logo</button>
+      <button class="btn btn-outline btn-sm" onclick="clearLogo()" style="margin-left:6px">Remove</button>
+    </div>
+    <div class="modal-acts">
+      <button class="btn btn-outline" onclick="closeModal('settings-modal')">Cancel</button>
+      <button class="btn btn-teal" onclick="saveSettings()">Save settings</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── DATA ──────────────────────────────────────────────────────────────────
+const CLARITY_ITEM_IDS = new Set(['1a1','1a2','1a3','1b1','1b2','1b3','1c1','1c2','1c3','1d1','1d2','1d3','1e1','1e2']);
+
+const PLANS = {
+  plan1: {
+    name:"Clarity Plan", fee:"₹2,500", q:'"Where am I financially?"',
+    phases:[
+      { id:"p1a", title:"A — Family snapshot", items:[
+        {id:"1a1", t:"Age of client & spouse", d:"Just the ages — to frame time horizon and life stage.", tag:"planner"},
+        {id:"1a2", t:"Occupation of client & spouse", d:"Salaried, business, professional? Affects income stability and risk capacity.", tag:"planner"},
+        {id:"1a3", t:"Number of dependents & their ages", d:"Children, parents. Who depends on this income?", tag:"planner"},
+      ]},
+      { id:"p1b", title:"B — Income & savings (no deep analysis)", items:[
+        {id:"1b1", t:"Approximate monthly take-home income", d:"Combined household. Don't need exact — ballpark is fine.", tag:"planner"},
+        {id:"1b2", t:"Monthly savings capacity", d:"What is left after expenses + EMIs? Are they saving anything at all?", tag:"planner"},
+        {id:"1b3", t:"Existing EMIs", d:"Home loan, car, personal loans? What's the monthly EMI burden?", tag:"planner"},
+      ]},
+      { id:"p1c", title:"C — Existing investments (major only)", items:[
+        {id:"1c1", t:"SIPs running (how many, approx amount)", d:"No need for fund names. Just: are they investing systematically?", tag:"planner"},
+        {id:"1c2", t:"LIC / traditional insurance policies", d:"How many? Are they treating them as investment or protection?", tag:"planner", warn:true},
+        {id:"1c3", t:"FDs / PPF / other savings", d:"Rough amounts — to get a sense of existing corpus.", tag:"planner"},
+      ]},
+      { id:"p1d", title:"D — Insurance check (adequacy only)", items:[
+        {id:"1d1", t:"Existing life cover — total amount", d:"All policies combined. Is it ≥ 10–12x annual income?", tag:"planner", warn:true},
+        {id:"1d2", t:"Existing health cover — amount & type", d:"Individual? Family floater? Corporate only? How much?", tag:"planner", warn:true},
+        {id:"1d3", t:"Are there obvious protection gaps?", d:"No term plan? No health beyond corporate? Note the flag.", tag:"planner", warn:true},
+      ]},
+      { id:"p1e", title:"E — Goals (top 2–3 only, no calculations)", items:[
+        {id:"1e1", t:"What are the top 2–3 financial goals?", d:"Retirement, child education, home purchase — what matters most to them?", tag:"planner"},
+        {id:"1e2", t:"Approximate timelines for each goal", d:"5 years? 10? 20? Just a rough horizon — no SIP calculations needed here.", tag:"planner"},
+      ]},
+      { id:"p1g", title:"G — Output (what client takes home)", items:[
+        {id:"1g1", t:"Write 3 priority action points", d:"Numbered. Specific. Actionable within 30 days.", tag:"planner"},
+        {id:"1g2", t:"Insurance observation noted", d:"1–2 lines: under-covered, wrong product, or adequate.", tag:"planner"},
+        {id:"1g3", t:"SIP / investment observation noted", d:"Investing systematically? Too little? Wrong category?", tag:"planner"},
+        {id:"1g4", t:"Emergency fund observation noted", d:"Do they have 3–6 months expenses in liquid savings?", tag:"planner"},
+        {id:"1g5", t:"Deliver brief written summary (1 page max)", d:"Plain language. No jargon. Not a 10-page report — that's the Complete Plan.", tag:"planner"},
+        {id:"1g6", t:"Send invoice ₹2,500 and collect payment", d:"", tag:"admin"},
+      ]},
+    ]
+  },
+
+  plan2: {
+    name:"Complete Financial Plan", fee:"₹8,000", q:'"What exactly should I do?"',
+    phases:[
+      { id:"p2a", title:"A — Detailed asset mapping (beyond Clarity)", items:[
+        {id:"2a1", t:"MF portfolio breakup — all folios", d:"List schemes, categories (equity/debt/hybrid), current value per scheme.", tag:"client", clarityDupe:true},
+        {id:"2a2", t:"EPF / PPF balance", d:"Current accumulated value. Note employer contribution rate.", tag:"client", clarityDupe:true},
+        {id:"2a3", t:"Property assets", d:"Self-occupied? Rented? Approximate market value. Loan outstanding.", tag:"client"},
+        {id:"2a4", t:"Gold allocation", d:"Physical gold, Sovereign Gold Bonds, Gold ETFs — total quantity and value.", tag:"client"},
+        {id:"2a5", t:"Net worth statement prepared", d:"Total assets minus total liabilities = net worth. Share with client.", tag:"planner"},
+      ]},
+      { id:"p2b", title:"B — Liability mapping", items:[
+        {id:"2b1", t:"Home loan — outstanding, EMI, tenure left", d:"Note interest rate. Any prepayment scope?", tag:"client", clarityDupe:true},
+        {id:"2b2", t:"Business or personal loans", d:"Any informal borrowings? NBFC loans? Credit card outstanding?", tag:"client", clarityDupe:true},
+        {id:"2b3", t:"Total monthly EMI burden as % of income", d:"Above 40%? Red flag. Flag it explicitly.", tag:"planner", warn:true},
+        {id:"2b4", t:"Debt management strategy recommended", d:"Prepayment sequence, refinancing, consolidation.", tag:"planner"},
+      ]},
+      { id:"p2c", title:"C — Goal calculations (with numbers now)", items:[
+        {id:"2c1", t:"Retirement corpus estimate", d:"At what age? What monthly income needed? Inflation-adjusted corpus required.", tag:"planner"},
+        {id:"2c2", t:"Child education estimate", d:"Current cost, years to goal, inflation at 8–10% — future corpus needed.", tag:"planner"},
+        {id:"2c3", t:"Other goals with SIP requirements", d:"Home down payment, car, wedding — specific SIP amounts to recommend.", tag:"planner"},
+        {id:"2c4", t:"Gap analysis — what is funded vs unfunded", d:"Show clearly which goals have SIPs running and which are unaddressed.", tag:"planner"},
+      ]},
+      { id:"p2d", title:"D — Insurance adequacy (formal assessment)", items:[
+        {id:"2d1", t:"Human Life Value estimate", d:"HLV = (Annual income × years to retirement). Recommended cover = HLV or min 10x income.", tag:"planner", warn:true},
+        {id:"2d2", t:"Health insurance adequacy", d:"Family floater amount. Is a super top-up needed? Health inflation at 12–15%/yr.", tag:"planner", warn:true, clarityDupe:true},
+        {id:"2d3", t:"Critical illness / disability cover check", d:"Especially if client is self-employed or sole earner.", tag:"planner"},
+        {id:"2d4", t:"LIC / endowment policies — keep or exit?", d:"Calculate surrender value vs continuing. Be direct about bad products.", tag:"planner", warn:true, clarityDupe:true},
+      ]},
+      { id:"p2e", title:"E — Behaviour review", items:[
+        {id:"2e1", t:"Risk tolerance assessed formally", d:"Use structured questionnaire. Conservative / Moderate / Aggressive.", tag:"planner"},
+        {id:"2e2", t:"Panic behaviour history noted", d:"Did they redeem in 2020? Stop SIPs? This determines equity allocation ceiling.", tag:"planner"},
+        {id:"2e3", t:"Existing investment mistakes flagged", d:"Over-diversification, wrong category, churning, endowment products, no debt fund.", tag:"planner"},
+        {id:"2e4", t:"Unrealistic expectations addressed", d:"Expecting 20% returns? Wanting guaranteed + high returns? Address directly.", tag:"planner"},
+      ]},
+      { id:"p2f", title:"F — Estate basics", items:[
+        {id:"2f1", t:"Nominee check — all investments", d:"MF folios, bank accounts, insurance — are nominees updated? Joint holders where needed?", tag:"planner"},
+        {id:"2f2", t:"Will awareness conversation", d:"Do they have a will? If not, explain why it matters. No need to draft — just flag.", tag:"planner"},
+        {id:"2f3", t:"Document organisation", d:"Do spouse + family know where to find financial documents if needed urgently?", tag:"planner"},
+      ]},
+      { id:"p2g", title:"G — Implementation & delivery", items:[
+        {id:"2g1", t:"Written financial plan delivered (8–12 pages)", d:"Net worth → goals → strategy → protection → budget → action list.", tag:"planner"},
+        {id:"2g2", t:"Implementation sequence defined", d:"What to do first, second, third — with deadlines.", tag:"planner"},
+        {id:"2g3", t:"SIP onboarding assisted", d:"Help initiate the recommended SIPs. Don't just recommend — help execute.", tag:"planner"},
+        {id:"2g4", t:"Insurance purchase guided", d:"Share comparisons. Support term and health plan selection and proposal.", tag:"planner"},
+        {id:"2g5", t:"Follow-up in 2 weeks on client actions", d:"Check what they've done. Offer support on stuck items.", tag:"planner"},
+        {id:"2g6", t:"Invoice ₹8,000 sent and collected", d:"", tag:"admin"},
+        {id:"2g7", t:"Partner Plan introduced", d:"Frame it as continuity — not a bigger report. Ongoing accountability.", tag:"rev"},
+      ]},
+    ]
+  },
+
+  plan3: {
+    name:"Partner Plan", fee:"₹15,000/yr", q:'"How do I stay on track over time?"',
+    phases:[
+      { id:"p3a", title:"Onboarding (month 1)", quarter:"onboarding", items:[
+        {id:"3a1", t:"Signed engagement letter / agreement", d:"Scope, fees, review frequency, what is included and what is not.", tag:"admin", warn:true},
+        {id:"3a2", t:"Full financial profile built or updated", d:"If new client: build from scratch. If existing: update the Complete Plan.", tag:"planner"},
+        {id:"3a3", t:"Goal tracking sheet created", d:"Each goal: target corpus, current value, SIP running, timeline, gap.", tag:"planner"},
+        {id:"3a4", t:"All 4 quarterly review dates booked in advance", d:"Get dates on the calendar now. Don't chase this later.", tag:"admin"},
+        {id:"3a5", t:"Annual fee ₹15,000 collected", d:"Invoice issued. Note anniversary date for renewal.", tag:"admin"},
+      ]},
+      { id:"p3b", title:"Q1 review (month 3)", quarter:"q1", items:[
+        {id:"3b1", t:"Income changes since last review?", d:"Salary hike, new income source, business revenue change.", tag:"planner"},
+        {id:"3b2", t:"All SIPs running? Any missed?", d:"Check SIP continuation. Any mandate failure? Top up if income increased.", tag:"planner"},
+        {id:"3b3", t:"Insurance renewals due this quarter?", d:"Prompt client on time. Late renewal = lapse. Health especially critical.", tag:"planner", warn:true},
+        {id:"3b4", t:"Portfolio snapshot updated", d:"Current value of all investments. Check asset allocation vs target.", tag:"planner"},
+        {id:"3b5", t:"Q1 review summary note sent to client", d:"1 page: key numbers, changes made, what to watch next quarter.", tag:"planner"},
+      ]},
+      { id:"p3c", title:"Q2 review — mid-year & tax (month 6)", quarter:"q2", items:[
+        {id:"3c1", t:"80C investments on track?", d:"ELSS, PPF contribution — will full ₹1.5L utilisation happen by March?", tag:"planner"},
+        {id:"3c2", t:"Capital gains review", d:"Any equity sold? LTCG over ₹1.25L? Tax-loss harvesting opportunity?", tag:"planner", warn:true},
+        {id:"3c3", t:"Net worth statement updated", d:"Compare to onboarding. Show the client their progress.", tag:"planner"},
+        {id:"3c4", t:"Emergency fund intact?", d:"Has any life event depleted it? Needs to be rebuilt?", tag:"planner"},
+        {id:"3c5", t:"New goals or life changes noted?", d:"New baby, new loan, property plan, business change — update the plan.", tag:"planner"},
+        {id:"3c6", t:"Q2 review summary sent", d:"Include net worth update and tax planning checklist.", tag:"planner"},
+      ]},
+      { id:"p3d", title:"Q3 review (month 9)", quarter:"q3", items:[
+        {id:"3d1", t:"Portfolio rebalancing check", d:"Has equity drifted > 5% from target? Rebalance if yes.", tag:"planner", warn:true},
+        {id:"3d2", t:"Upcoming large expenses in next 6 months?", d:"School fees, travel, property purchase — plan liquidity.", tag:"planner"},
+        {id:"3d3", t:"Insurance coverage still adequate?", d:"Income increased? New dependent? Sum insured still sufficient?", tag:"planner"},
+        {id:"3d4", t:"Year-end tax planning preview", d:"What actions should client take in Q4 before March?", tag:"planner"},
+        {id:"3d5", t:"Q3 review summary sent", d:"Rebalancing done, goal progress, next quarter focus.", tag:"planner"},
+      ]},
+      { id:"p3e", title:"Annual review & renewal (month 12)", quarter:"annual", items:[
+        {id:"3e1", t:"Annual performance report prepared", d:"Full year: goals funded, returns, net worth growth, insurance status.", tag:"planner"},
+        {id:"3e2", t:"Tax finalisation support", d:"All 80C investments done? Form 26AS checked? ITR data ready.", tag:"planner", warn:true},
+        {id:"3e3", t:"Goals reviewed and updated for next year", d:"Have priorities changed? Timeline shifts? Adjust plan for year 2.", tag:"planner"},
+        {id:"3e4", t:"Annual review call held (60 min)", d:"Walk through the annual report. Plan year 2 strategy.", tag:"planner"},
+        {id:"3e5", t:"Renewal conversation", d:"Show value delivered. Present renewal clearly. Confirm commitment.", tag:"rev"},
+        {id:"3e6", t:"Renewal payment collected", d:"Invoice for next year. Update anniversary date. Archive year-1 folder.", tag:"admin"},
+        {id:"3e7", t:"Ask for referrals", d:"1–2 families who could benefit. This is the best time to ask.", tag:"rev"},
+      ]},
+    ]
+  }
+};
+
+// ─── STATE ────────────────────────────────────────────────────────────────
+let state = {
+  client:{name:'',plan:'',date:'',referredBy:'',riskProfile:''},
+  checked:{},
+  notes:{},           // item-level notes
+  sectionNotes:{},    // section obs + action
+  flags:{},           // flagged for follow-up
+  statuses:{plan1:'ns',plan2:'ns',plan3:'ns'},
+  quarterDates:{p3a:'',p3b:'',p3c:'',p3d:'',p3e:''},
+  outputs:{},
+  session:{start:'',end:''},
+  concern:{biggest:'',emotion:''}
+};
+
+let settings = {
+  practiceName:'',
+  plannerName:'',
+  contact:'',
+  disclaimer:'This report is prepared for discussion purposes only. It does not constitute SEBI-registered investment advice.',
+  logoData:''
+};
+
+let timerInterval = null;
+let timerStartTime = null;
+
+// ─── INIT ─────────────────────────────────────────────────────────────────
+function init(){
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('c-date').value = today;
+  state.client.date = today;
+  loadSettings();
+  loadFromLocalStorage();
+  Object.entries(PLANS).forEach(([pid,plan]) => renderPlan(pid,plan));
+  refreshAll();
+  setupAutoSave();
+}
+
+function setupAutoSave(){
+  // Auto-save all text inputs/textareas to localStorage
+  document.addEventListener('input', e => {
+    if(e.target.matches('input,textarea,select')){
+      collectOutputs();
+      saveToLocalStorage();
+    }
+  });
+}
+
+// ─── LOCAL STORAGE ────────────────────────────────────────────────────────
+function saveToLocalStorage(){
+  try{ localStorage.setItem('mfd-planner-state', JSON.stringify(state)); }catch(e){}
+}
+
+function loadFromLocalStorage(){
+  try{
+    const saved = localStorage.getItem('mfd-planner-state');
+    if(saved){
+      const loaded = JSON.parse(saved);
+      // Merge carefully — only if it has required fields
+      if(loaded && loaded.checked){
+        state = Object.assign(state, loaded);
+        applyStateToUI();
+      }
+    }
+  }catch(e){}
+}
+
+function applyStateToUI(){
+  document.getElementById('c-name').value = state.client.name||'';
+  document.getElementById('c-plan').value = state.client.plan||'';
+  document.getElementById('c-date').value = state.client.date||'';
+  document.getElementById('c-ref').value = state.client.referredBy||'';
+  document.getElementById('c-risk').value = state.client.riskProfile||'';
+  // Outputs
+  const outIds = ['ins-p1','sip-p1','efund-p1','upgrade-p1','nw-p2','risk-p2','ins-p2','beh-p2','impl-p2','partner-p2','sip-p3','life-p3','risk-p3','renew-p3'];
+  outIds.forEach(id=>{ const el=document.getElementById(id); if(el&&state.outputs[id]) el.value=state.outputs[id]; });
+  ['pri1-p1','pri2-p1','pri3-p1'].forEach(id=>{ const el=document.getElementById(id); if(el&&state.outputs[id]) el.value=state.outputs[id]; });
+  // Concern
+  if(state.concern){
+    const cb=document.getElementById('concern-biggest'); if(cb) cb.value=state.concern.biggest||'';
+    const ce=document.getElementById('concern-emotion'); if(ce) ce.value=state.concern.emotion||'';
+  }
+  // Quarter dates
+  if(state.quarterDates){
+    Object.entries(state.quarterDates).forEach(([phId,date])=>{
+      const el=document.getElementById('qd-'+phId); if(el) el.value=date||'';
+    });
+  }
+  // Session timer
+  if(state.session && state.session.start){
+    document.getElementById('timer-started').textContent = 'Started: '+state.session.start;
+    if(state.session.end) document.getElementById('timer-ended').textContent = ' · Ended: '+state.session.end;
+  }
+}
+
+// ─── SETTINGS ─────────────────────────────────────────────────────────────
+function loadSettings(){
+  try{
+    const s = localStorage.getItem('mfd-settings');
+    if(s) settings = Object.assign(settings, JSON.parse(s));
+    applySettings();
+  }catch(e){}
+}
+
+function applySettings(){
+  if(settings.practiceName) document.getElementById('hdr-practice-name').textContent = settings.practiceName;
+  if(settings.logoData){
+    document.getElementById('hdr-logo-ph').style.display='none';
+    const img=document.getElementById('hdr-logo-img'); img.src=settings.logoData; img.style.display='block';
+    const lp=document.getElementById('logo-preview'); lp.innerHTML=`<img src="${settings.logoData}" style="width:100%;height:100%;object-fit:contain">`;
+  }
+}
+
+function saveSettings(){
+  settings.practiceName = document.getElementById('s-practice').value.trim() || settings.practiceName;
+  settings.plannerName = document.getElementById('s-planner').value.trim() || settings.plannerName;
+  settings.contact = document.getElementById('s-contact').value.trim() || settings.contact;
+  settings.disclaimer = document.getElementById('s-disclaimer').value.trim() || settings.disclaimer;
+  try{ localStorage.setItem('mfd-settings', JSON.stringify(settings)); }catch(e){}
+  applySettings();
+  closeModal('settings-modal');
+  toast('✓ Settings saved');
+}
+
+function uploadLogo(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    settings.logoData = e.target.result;
+    const lp = document.getElementById('logo-preview');
+    lp.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:contain">`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearLogo(){
+  settings.logoData='';
+  document.getElementById('logo-preview').innerHTML='📊';
+  document.getElementById('hdr-logo-img').style.display='none';
+  document.getElementById('hdr-logo-ph').style.display='';
+}
+
+function openSettingsModal(){
+  document.getElementById('s-practice').value = settings.practiceName||'';
+  document.getElementById('s-planner').value = settings.plannerName||'';
+  document.getElementById('s-contact').value = settings.contact||'';
+  document.getElementById('s-disclaimer').value = settings.disclaimer||'';
+  openModal('settings-modal');
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────
+function renderPlan(pid, plan){
+  const cont = document.getElementById('cl-'+pid);
+  if(!cont) return;
+  cont.innerHTML='';
+
+  // For plan3, wrap quarters
+  const quarterGroups = {};
+  if(pid==='plan3'){
+    plan.phases.forEach(ph=>{
+      quarterGroups[ph.id] = ph.quarter;
+    });
+  }
+
+  plan.phases.forEach((ph, pi) => {
+    // Skip F section for plan1 (rendered as concern card)
+    if(pid==='plan1' && ph.id==='p1f') return;
+
+    const wrap = document.createElement('div');
+
+    // Partner plan quarterly wrapper
+    if(pid==='plan3' && ph.quarter){
+      wrap.className='quarter-block';
+      const qhdr = document.createElement('div');
+      qhdr.className='quarter-hdr';
+      qhdr.innerHTML=`<h4>${ph.title}</h4><div class="quarter-date"><label>Date completed</label><input type="date" id="qd-${ph.id}" placeholder="" onchange="saveQuarterDate('${ph.id}',this.value)"></div>`;
+      wrap.appendChild(qhdr);
+
+      // Render section inside quarter block
+      const innerWrap = renderSection(ph, pi, plan.phases.length, pid);
+      wrap.appendChild(innerWrap);
+    } else {
+      wrap.className='';
+      const inner = renderSection(ph, pi, plan.phases.length, pid);
+      // copy nodes
+      wrap.appendChild(inner);
+    }
+
+    cont.appendChild(wrap);
+
+    // Section obs panel after section
+    const obsPanel = buildSectionObsPanel(ph.id, ph.title);
+    cont.appendChild(obsPanel);
+  });
+}
+
+function renderSection(ph, pi, totalPhases, pid){
+  const wrap = document.createElement('div');
+  wrap.className='section';
+
+  const body = document.createElement('div');
+  body.className='sec-body';
+  body.id='sb-'+ph.id;
+
+  ph.items.forEach(item => {
+    const el = document.createElement('div');
+    el.className='item'+(state.checked[item.id]?' done':'');
+    el.id='item-'+item.id;
+
+    const tagCls = item.warn?'tag-warn':item.tag==='rev'?'tag-rev':item.tag==='admin'?'tag-admin':item.tag==='client'?'tag-client':'tag-planner';
+    const tagLbl = item.warn?'⚠ critical':item.tag==='rev'?'revenue':item.tag;
+
+    el.innerHTML=`
+      <div class="item-main" onclick="toggle('${item.id}')">
+        <div class="chk"><span class="tick">✓</span></div>
+        <div class="ic">
+          <div class="it">${item.t}</div>
+          ${item.d?`<div class="id">${item.d}</div>`:''}
+          <div class="item-tags">
+            <span class="tag ${tagCls}">${tagLbl}</span>
+            ${item.clarityDupe?`<span class="tag tag-clarity">clarity already covered</span>`:''}
+          </div>
+        </div>
+      </div>
+      <div class="item-actions">
+        <button class="note-btn${state.notes[item.id]?' has-note':''}" title="Add note" onclick="toggleItemNote('${item.id}')" id="notebtn-${item.id}">📝</button>
+        <button class="flag-btn${state.flags[item.id]?' active':''}" title="Flag for follow-up" onclick="toggleFlag('${item.id}','${item.t}')" id="flagbtn-${item.id}">🚩</button>
+      </div>`;
+
+    body.appendChild(el);
+
+    // Note panel
+    const notePanel = document.createElement('div');
+    notePanel.className='item-note-panel'+(state.notes[item.id+'-open']?' open':'');
+    notePanel.id='notepanel-'+item.id;
+    notePanel.innerHTML=`<div class="note-hint">What did you find for this item?</div><textarea placeholder="e.g. ₹25L LIC + ₹50L term = ₹75L total, needs ₹1.2Cr..." oninput="saveItemNote('${item.id}',this.value)">${state.notes[item.id]||''}</textarea>`;
+    body.appendChild(notePanel);
+  });
+
+  const hdr = document.createElement('div');
+  hdr.className='sec-hdr';
+  hdr.id='sh-'+ph.id;
+  hdr.innerHTML=`<div class="sec-num" id="sn-${ph.id}">${pi+1}</div><div class="sec-title">${ph.title}</div><button class="sec-obs-btn${(state.sectionNotes[ph.id+'-obs']||state.sectionNotes[ph.id+'-act'])?' has-note':''}" id="obsBtn-${ph.id}" onclick="toggleSecObs(event,'${ph.id}')">+ Assessment</button><div class="sec-count" id="sc-${ph.id}">0/${ph.items.length}</div><div class="sec-arrow open" id="sa-${ph.id}">▾</div>`;
+  hdr.addEventListener('click', (e)=>{
+    if(e.target.closest('.sec-obs-btn')) return;
+    body.classList.toggle('closed');
+    document.getElementById('sa-'+ph.id).classList.toggle('open');
+  });
+
+  wrap.appendChild(hdr);
+  wrap.appendChild(body);
+  return wrap;
+}
+
+function buildSectionObsPanel(phId, phTitle){
+  const div = document.createElement('div');
+  div.className='sec-obs-panel';
+  div.id='obspanel-'+phId;
+  div.innerHTML=`
+    <div class="sec-obs-grid">
+      <div class="sec-obs-field">
+        <span class="obs-lbl-chip chip-obs">Observation</span>
+        <label>What did you find?</label>
+        <textarea id="secobs-${phId}" placeholder="e.g. Client has ₹75L life cover vs ₹1.2Cr needed..." oninput="saveSectionNote('${phId}','obs',this.value)">${state.sectionNotes[phId+'-obs']||''}</textarea>
+      </div>
+      <div class="sec-obs-field">
+        <span class="obs-lbl-chip chip-act">Action recommended</span>
+        <label>What should be done?</label>
+        <textarea id="secact-${phId}" placeholder="e.g. Buy additional ₹50L term plan immediately..." oninput="saveSectionNote('${phId}','act',this.value)">${state.sectionNotes[phId+'-act']||''}</textarea>
+      </div>
+    </div>`;
+  return div;
+}
+
+// ─── INTERACTIONS ─────────────────────────────────────────────────────────
+function toggle(id){
+  state.checked[id]=!state.checked[id];
+  const el=document.getElementById('item-'+id);
+  el.classList.toggle('done',state.checked[id]);
+  refreshAll();
+  saveToLocalStorage();
+}
+
+function toggleItemNote(id){
+  const panel=document.getElementById('notepanel-'+id);
+  const isOpen=panel.classList.toggle('open');
+  state.notes[id+'-open']=isOpen;
+}
+
+function saveItemNote(id,val){
+  state.notes[id]=val;
+  const btn=document.getElementById('notebtn-'+id);
+  if(btn) btn.classList.toggle('has-note',!!val.trim());
+  saveToLocalStorage();
+}
+
+function toggleFlag(id,title){
+  state.flags[id]=!state.flags[id];
+  if(!state.flags[id]) delete state.flags[id];
+  const btn=document.getElementById('flagbtn-'+id);
+  if(btn) btn.classList.toggle('active',!!state.flags[id]);
+  refreshPendingList();
+  saveToLocalStorage();
+}
+
+function toggleSecObs(e,phId){
+  e.stopPropagation();
+  const panel=document.getElementById('obspanel-'+phId);
+  panel.classList.toggle('open');
+}
+
+function saveSectionNote(phId,type,val){
+  state.sectionNotes[phId+'-'+type]=val;
+  const btn=document.getElementById('obsBtn-'+phId);
+  if(btn) btn.classList.toggle('has-note',(state.sectionNotes[phId+'-obs']||state.sectionNotes[phId+'-act'])?.trim());
+  saveToLocalStorage();
+}
+
+function saveQuarterDate(phId,val){
+  state.quarterDates[phId]=val;
+  saveToLocalStorage();
+}
+
+function setStatus(pid,status){
+  state.statuses[pid]=status;
+  updateStatusButtons(pid);
+  updateSidebarStatus(pid);
+  saveToLocalStorage();
+}
+
+function updateStatusButtons(pid){
+  const n=pid.replace('plan','');
+  ['ns','ip','done'].forEach(s=>{
+    const btn=document.getElementById(`sb${n}-${s}`);
+    if(btn) btn.classList.toggle('active',state.statuses[pid]===s);
+  });
+}
+
+function updateSidebarStatus(pid){
+  const el=document.getElementById('ss-'+pid);
+  if(!el) return;
+  const map={ns:{cls:'ss-ns',lbl:'Not started'},ip:{cls:'ss-ip',lbl:'In progress'},done:{cls:'ss-done',lbl:'Completed'}};
+  const s=state.statuses[pid]||'ns';
+  el.className='side-status '+map[s].cls;
+  el.textContent=map[s].lbl;
+}
+
+// ─── SESSION TIMER ────────────────────────────────────────────────────────
+function startTimer(){
+  if(timerInterval) return;
+  timerStartTime = Date.now();
+  const now = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  state.session.start = now;
+  document.getElementById('timer-started').textContent = 'Started: '+now;
+  document.getElementById('timer-start-btn').style.display='none';
+  document.getElementById('timer-stop-btn').style.display='';
+  document.getElementById('timer-display').style.display='';
+  timerInterval = setInterval(()=>{
+    const elapsed = Math.floor((Date.now()-timerStartTime)/1000);
+    const m=Math.floor(elapsed/60), s=elapsed%60;
+    const lbl=document.getElementById('timer-display');
+    lbl.textContent = `${m}m ${s}s`;
+    if(elapsed > 90*60) lbl.style.color='#f87171';
+    else if(elapsed > 75*60) lbl.style.color='#fbbf24';
+    else lbl.style.color='var(--gold)';
+    lbl.className='timer-active';
+  },1000);
+  saveToLocalStorage();
+}
+
+function stopTimer(){
+  if(timerInterval){ clearInterval(timerInterval); timerInterval=null; }
+  const now = new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  state.session.end = now;
+  document.getElementById('timer-stop-btn').style.display='none';
+  document.getElementById('timer-ended').textContent = ' · Ended: '+now;
+  saveToLocalStorage();
+}
+
+// ─── SYNC & REFRESH ───────────────────────────────────────────────────────
+function syncClient(){
+  state.client.name=document.getElementById('c-name').value;
+  state.client.date=document.getElementById('c-date').value;
+  state.client.referredBy=document.getElementById('c-ref').value;
+  state.client.riskProfile=document.getElementById('c-risk').value;
+}
+
+function collectOutputs(){
+  syncClient();
+  const outIds=['ins-p1','sip-p1','efund-p1','upgrade-p1','nw-p2','risk-p2','ins-p2','beh-p2','impl-p2','partner-p2','sip-p3','life-p3','risk-p3','renew-p3'];
+  outIds.forEach(id=>{const el=document.getElementById(id);if(el)state.outputs[id]=el.value;});
+  ['pri1-p1','pri2-p1','pri3-p1'].forEach(id=>{const el=document.getElementById(id);if(el)state.outputs[id]=el.value;});
+  const cb=document.getElementById('concern-biggest'); if(cb) state.concern.biggest=cb.value;
+  const ce=document.getElementById('concern-emotion'); if(ce) state.concern.emotion=ce.value;
+  state.client.plan=document.getElementById('c-plan').value;
+}
+
+function getProgress(pid){
+  const plan=PLANS[pid];
+  let total=0,done=0;
+  const phases=plan.phases.map(ph=>{
+    const pt=ph.items.length;
+    const pd=ph.items.filter(i=>state.checked[i.id]).length;
+    total+=pt; done+=pd;
+    return {title:ph.title,id:ph.id,total:pt,done:pd};
+  });
+  return {total,done,pct:total?Math.round(done/total*100):0,phases};
+}
+
+function refreshAll(){
+  let td=0,tt=0;
+  ['plan1','plan2','plan3'].forEach(pid=>{
+    const {total,done,pct,phases}=getProgress(pid);
+    td+=done; tt+=total;
+    document.getElementById('pct-'+pid).textContent=pct+'%';
+    document.getElementById('bar-'+pid).style.width=pct+'%';
+    document.getElementById('cnt-'+pid).textContent=`${done} / ${total} steps`;
+    document.getElementById('pill-'+pid).textContent=pct+'%';
+    phases.forEach((ph,pi)=>{
+      const sn=document.getElementById('sn-'+ph.id);
+      const sc=document.getElementById('sc-'+ph.id);
+      if(sc) sc.textContent=`${ph.done}/${ph.total}`;
+      if(sn){
+        sn.classList.toggle('done',ph.done===ph.total&&ph.total>0);
+        sn.textContent=(ph.done===ph.total&&ph.total>0)?'✓':(pi+1);
+      }
+    });
+    updateStatusButtons(pid);
+    updateSidebarStatus(pid);
+  });
+  const op=tt?Math.round(td/tt*100):0;
+  document.getElementById('s-done').textContent=td;
+  document.getElementById('s-total').textContent=tt;
+  document.getElementById('s-pct').textContent=op+'%';
+  document.getElementById('pill-all').textContent=op+'%';
+
+  // Flag count
+  const fc=Object.keys(state.flags).filter(k=>state.flags[k]).length;
+  document.getElementById('s-flags').textContent=fc;
+  const pb=document.getElementById('pending-count');
+  if(fc>0){pb.textContent=fc;pb.style.display='';}else{pb.style.display='none';}
+
+  refreshSummary();
+  refreshPendingList();
+}
+
+function refreshSummary(){
+  const n=document.getElementById('c-name').value;
+  const p=document.getElementById('c-plan').value;
+  state.client.name=n; state.client.plan=p;
+  const lbl={plan1:'Clarity',plan2:'Complete',plan3:'Partner'};
+  document.getElementById('s-plan').textContent=p?lbl[p]:'—';
+  const cards=document.getElementById('sum-cards');
+  cards.innerHTML='';
+  Object.entries(PLANS).forEach(([pid,plan])=>{
+    const {pct,done,total,phases}=getProgress(pid);
+    const card=document.createElement('div');
+    card.className='plan-sum';
+    const status=state.statuses[pid]||'ns';
+    const statusMap={ns:'Not started',ip:'In progress',done:'Completed'};
+    card.innerHTML=`<div class="plan-sum-hdr"><span>${plan.name} · ${plan.fee}</span><span class="plan-sum-pct">${statusMap[status]} · ${pct}% · ${done}/${total}</span></div><div class="plan-sum-body">${phases.map(ph=>`<div class="ph-row"><span class="ph-name">${ph.title}</span><div class="mini-bar"><div class="mini-fill" style="width:${ph.total?Math.round(ph.done/ph.total*100):0}%"></div></div><span class="ph-ct">${ph.done}/${ph.total}</span></div>`).join('')}</div>`;
+    cards.appendChild(card);
+  });
+}
+
+function refreshPendingList(){
+  const cont=document.getElementById('pending-list');
+  if(!cont) return;
+  const flagged=Object.entries(state.flags).filter(([k,v])=>v);
+  if(!flagged.length){
+    cont.innerHTML='<div class="pending-card"><h3>🚩 Follow-up items</h3><p class="pending-empty">No items flagged yet. Click 🚩 on any checklist item to flag it for follow-up.</p></div>';
+    return;
+  }
+  // Build lookup
+  const lookup={};
+  Object.values(PLANS).forEach(plan=>{
+    plan.phases.forEach(ph=>{
+      ph.items.forEach(item=>{ lookup[item.id]={title:item.t,phase:ph.title,note:state.notes[item.id]||''}; });
+    });
+  });
+  let html='<div class="pending-card"><h3>🚩 Items flagged for follow-up ('+flagged.length+')</h3>';
+  flagged.forEach(([id])=>{
+    const info=lookup[id]||{title:id,phase:'Unknown',note:''};
+    html+=`<div class="pending-item">🚩 <div><strong>${info.title}</strong><br><span>${info.phase}</span>${info.note?`<br><em style="color:var(--ink-l)">${info.note}</em>`:''}</div></div>`;
+  });
+  html+='</div>';
+  cont.innerHTML=html;
+}
+
+// ─── VIEW ─────────────────────────────────────────────────────────────────
+function showView(id){
+  document.querySelectorAll('.view').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.side-item').forEach(e=>e.classList.remove('active'));
+  document.getElementById('view-'+id).classList.add('active');
+  document.getElementById('nav-'+id).classList.add('active');
+}
+
+function syncPlanNav(){
+  collectOutputs();
+  const v=document.getElementById('c-plan').value;
+  if(v) showView(v);
+  // Auto-select in PDF modal
+  ['plan1','plan2','plan3'].forEach(pid=>{
+    const b=document.getElementById('pdf-btn-'+pid);
+    if(b) b.classList.toggle('selected',pid===v);
+  });
+  refreshSummary();
+  saveToLocalStorage();
+}
+
+// ─── CLIENT ───────────────────────────────────────────────────────────────
+function newClient(){
+  if(!confirm('Clear all progress and start a fresh client session?')) return;
+  state={client:{name:'',plan:'',date:new Date().toISOString().split('T')[0],referredBy:'',riskProfile:''},checked:{},notes:{},sectionNotes:{},flags:{},statuses:{plan1:'ns',plan2:'ns',plan3:'ns'},quarterDates:{},outputs:{},session:{start:'',end:''},concern:{biggest:'',emotion:''}};
+  document.getElementById('c-name').value='';
+  document.getElementById('c-plan').value='';
+  document.getElementById('c-date').value=state.client.date;
+  document.getElementById('c-ref').value='';
+  document.getElementById('c-risk').value='';
+  const outIds=['ins-p1','sip-p1','efund-p1','upgrade-p1','nw-p2','risk-p2','ins-p2','beh-p2','impl-p2','partner-p2','sip-p3','life-p3','risk-p3','renew-p3'];
+  outIds.forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['pri1-p1','pri2-p1','pri3-p1'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const cb=document.getElementById('concern-biggest'); if(cb) cb.value='';
+  const ce=document.getElementById('concern-emotion'); if(ce) ce.value='';
+  Object.entries(PLANS).forEach(([pid,plan])=>renderPlan(pid,plan));
+  refreshAll();
+  showView('summary');
+  if(timerInterval){clearInterval(timerInterval);timerInterval=null;}
+  document.getElementById('timer-start-btn').style.display='';
+  document.getElementById('timer-stop-btn').style.display='none';
+  document.getElementById('timer-display').style.display='none';
+  document.getElementById('timer-started').textContent='';
+  document.getElementById('timer-ended').textContent='';
+  saveToLocalStorage();
+  toast('↺ Ready for new client');
+}
+
+// ─── IMPORT / EXPORT ──────────────────────────────────────────────────────
+function exportJSON(){
+  collectOutputs();
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  const s=(state.client.name||'client').replace(/\s+/g,'-');
+  a.download=`mfd-planner-${s}-${state.client.date||'undated'}.json`;
+  a.click();
+  toast('✓ Saved as JSON');
+}
+
+function openModal(id){
+  if(id==='settings-modal'){
+    document.getElementById('s-practice').value=settings.practiceName||'';
+    document.getElementById('s-planner').value=settings.plannerName||'';
+    document.getElementById('s-contact').value=settings.contact||'';
+    document.getElementById('s-disclaimer').value=settings.disclaimer||'';
+  }
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+function openPDFChooser(){
+  collectOutputs();
+  const v=document.getElementById('c-plan').value;
+  ['plan1','plan2','plan3'].forEach(pid=>{
+    const b=document.getElementById('pdf-btn-'+pid);
+    if(b) b.classList.toggle('selected',pid===v);
+  });
+  openModal('pdf-modal');
+}
+
+function doImport(){
+  try{
+    const loaded=JSON.parse(document.getElementById('imp-json').value.trim());
+    if(!loaded.checked) throw 0;
+    state=Object.assign({client:{},checked:{},notes:{},sectionNotes:{},flags:{},statuses:{plan1:'ns',plan2:'ns',plan3:'ns'},quarterDates:{},outputs:{},session:{},concern:{}},loaded);
+    applyStateToUI();
+    Object.entries(PLANS).forEach(([pid,plan])=>renderPlan(pid,plan));
+    refreshAll();
+    closeModal('import-modal');
+    saveToLocalStorage();
+    toast('✓ Checklist loaded');
+  }catch(e){alert('Invalid JSON — paste the full exported file.');}
+}
+
+// ─── PDF GENERATION ───────────────────────────────────────────────────────
+function generatePDF(pid){
+  closeModal('pdf-modal');
+  collectOutputs();
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'mm',format:'a4'});
+  const pw=doc.internal.pageSize.getWidth();   // 210
+  const ph=doc.internal.pageSize.getHeight();  // 297
+  const LM=16, RM=pw-16, CW=pw-32;            // margins & content width
+  let y=0, pageNum=0;
+
+  // ── PALETTE ──
+  const C={
+    ink:[26,26,46], inkL:[74,74,106], inkM:[102,102,130],
+    gold:[201,168,76], goldL:[240,224,176], goldP:[253,248,238],
+    teal:[15,110,86], tealL:[225,242,234],
+    amber:[184,107,0], amberL:[255,248,236],
+    blue:[12,68,124], blueL:[230,241,251],
+    white:[255,255,255], bg:[245,243,238],
+    rule:[220,215,200]
+  };
+
+  const plan=PLANS[pid];
+  const cName=state.client.name||'Valued Client';
+  const cDate=state.client.date?(()=>{
+    const d=new Date(state.client.date+'T00:00:00');
+    return d.toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+  })():'—';
+  const practiceName=settings.practiceName||'Your Financial Planner';
+  const plannerName=settings.plannerName||'';
+  const riskProfile=state.client.riskProfile||'';
+  const referredBy=state.client.referredBy||'';
+  const disclaimer=settings.disclaimer||'This report is prepared for discussion purposes only. It does not constitute SEBI-registered investment advice.';
+  const contact=settings.contact||'';
+
+  // ── HELPERS ──
+  function rgb(c){ doc.setTextColor(...c); }
+  function fill(c){ doc.setFillColor(...c); }
+  function stroke(c){ doc.setDrawColor(...c); }
+  function font(style,size){ doc.setFont('helvetica',style); doc.setFontSize(size); }
+  function txt(text,x,yy,opts){ doc.text(text,x,yy,opts||{}); }
+  function rule(yy,alpha){ 
+    doc.setDrawColor(alpha||180,alpha?alpha:165,alpha?alpha:140); 
+    doc.setLineWidth(0.2); 
+    doc.line(LM,yy,RM,yy); 
+  }
+  function ck(n){ if(y+n>ph-24) addPage(); }
+  function spl(text,w){ return doc.splitTextToSize(String(text||''),w); }
+
+  function addPage(){
+    pageNum++;
+    doc.addPage();
+    y=0;
+    renderPageHeader();
+    renderFooter();
+    y=22;
+  }
+
+  function renderPageHeader(){
+    // Thin top bar on continuation pages
+    fill(C.ink); doc.rect(0,0,pw,10,'F');
+    fill(C.gold); doc.rect(0,10,pw,1,'F');
+    font('bold',7); rgb(C.goldL);
+    txt(practiceName,LM,6.5);
+    txt(`${plan.name}  ·  ${cName}`,RM,6.5,{align:'right'});
+    rgb(C.ink);
+  }
+
+  function renderFooter(){
+    const pg=doc.internal.getNumberOfPages();
+    // Footer line
+    fill(C.rule); doc.rect(LM,ph-12,CW,0.3,'F');
+    font('normal',6.5); rgb([160,150,130]);
+    txt(practiceName+(contact?' · '+contact:''),LM,ph-8);
+    txt('Page '+pg,pw/2,ph-8,{align:'center'});
+    txt('Confidential — Prepared for '+cName,RM,ph-8,{align:'right'});
+    rgb(C.ink);
+  }
+
+  // ════════════════════════════════════════════════════════
+  // PAGE 1 — COVER
+  // ════════════════════════════════════════════════════════
+  pageNum=1;
+  renderFooter();
+
+  // Full-page dark background
+  fill(C.ink); doc.rect(0,0,pw,ph,'F');
+
+  // Gold side accent stripe
+  fill(C.gold); doc.rect(0,0,6,ph,'F');
+
+  // Top decorative band
+  fill([35,35,58]); doc.rect(6,0,pw-6,52,'F');
+  fill(C.gold); doc.rect(6,52,pw-6,1.5,'F');
+
+  // Logo placement
+  let logoEndX=LM+14;
+  if(settings.logoData){
+    try{
+      doc.addImage(settings.logoData,'PNG',LM,12,20,20);
+      logoEndX=LM+26;
+    }catch(e){}
+  }
+
+  // Practice name & planner
+  font('bold',9); rgb(C.goldL);
+  txt(practiceName,logoEndX,19);
+  if(plannerName){ font('normal',7.5); rgb([160,150,110]); txt(plannerName,logoEndX,25); }
+
+  // Confidential watermark style
+  font('normal',6); rgb([80,80,110]);
+  txt('CONFIDENTIAL  ·  CLIENT FINANCIAL REPORT',RM,14,{align:'right'});
+  txt(cDate,RM,20,{align:'right'});
+
+  // Plan name — large
+  font('bold',32); rgb(C.white);
+  txt(plan.name,LM,78);
+
+  // Gold underline under plan name
+  fill(C.gold); doc.rect(LM,82,70,1,'F');
+
+  // Positioning tagline
+  const posMap={
+    plan1:'A personal financial health check — where you stand, what to do next.',
+    plan2:'Your complete financial blueprint — structured analysis, precise action.',
+    plan3:'Your ongoing financial partnership — accountability, reviews, momentum.'
+  };
+  font('italic',9.5); rgb([190,175,135]);
+  const tagLines=spl(posMap[pid],CW-20);
+  tagLines.forEach((l,i)=>{ txt(l,LM,90+i*5.5); });
+
+  // ── CLIENT DETAIL BOX ──
+  const boxY=110;
+  fill([38,38,62]); doc.roundedRect(LM,boxY,CW,42,3,3,'F');
+  fill(C.gold); doc.roundedRect(LM,boxY,3,42,1.5,1.5,'F');
+
+  font('bold',7); rgb(C.goldL);
+  txt('PREPARED FOR',LM+9,boxY+8);
+  font('bold',14); rgb(C.white);
+  txt(cName,LM+9,boxY+17);
+
+  // Separator
+  fill([55,55,80]); doc.rect(LM+9,boxY+20,CW-18,0.4,'F');
+
+  // Meta grid
+  const metaItems=[
+    ['Date of Report', cDate],
+    ['Plan Type', plan.name],
+    ['Risk Profile', riskProfile||'Not assessed'],
+    ['Referred By', referredBy||'—'],
+  ];
+  const colW=(CW-18)/2;
+  metaItems.forEach((item,i)=>{
+    const col=i%2, row=Math.floor(i/2);
+    const mx=LM+9+col*(colW+4);
+    const my=boxY+27+row*10;
+    font('normal',6.5); rgb([150,140,110]);
+    txt(item[0].toUpperCase(),mx,my);
+    font('bold',8); rgb(C.white);
+    txt(item[1],mx,my+4.5);
+  });
+
+  // Session timing if recorded
+  if(state.session&&(state.session.start||state.session.end)){
+    let st='Session: ';
+    if(state.session.start) st+='Started '+state.session.start;
+    if(state.session.end) st+=' — Ended '+state.session.end;
+    font('normal',6.5); rgb([120,110,90]);
+    txt(st,LM+9,boxY+48);
+  }
+
+  // ── PLAN SCOPE REMINDER ──
+  const scopeY=boxY+50;
+  fill(C.goldP); doc.roundedRect(LM,scopeY,CW,22,2,2,'F');
+  fill(C.gold); doc.rect(LM,scopeY,2.5,22,'F');
+  font('bold',7); rgb(C.amber);
+  txt('SCOPE OF THIS REPORT',LM+7,scopeY+6);
+  font('normal',7.5); rgb([100,70,10]);
+  const scopeMap={
+    plan1:'This report covers: family snapshot, income & savings overview, existing investment check, insurance adequacy, and top 3 goals. It does NOT include net worth calculation, SIP amount recommendations, retirement projections, or portfolio restructuring.',
+    plan2:'This report covers: full asset & liability mapping, goal calculations with numbers, formal insurance HLV assessment, behaviour review, estate basics, and a detailed implementation sequence with SIP recommendations.',
+    plan3:'This report covers the ongoing Partner Plan review cycle — onboarding, Q1, Q2, Q3, and annual review checkpoints. Each section is independently date-stamped and completable across the year.'
+  };
+  const scopeLines=spl(scopeMap[pid],CW-14);
+  scopeLines.forEach((l,i)=>{ txt(l,LM+7,scopeY+12+i*4.2); });
+
+  // ── TABLE OF CONTENTS ──
+  const tocY=scopeY+28;
+  fill(C.bg); doc.roundedRect(LM,tocY,CW,8,'F');
+  fill(C.inkL); doc.rect(LM,tocY,CW,0.4,'F');
+  font('bold',7); rgb(C.inkL);
+  txt('CONTENTS OF THIS REPORT',LM,tocY+5.5);
+
+  const tocSections=[];
+  plan.phases.forEach(ph=>{
+    const hasContent=ph.items.some(i=>state.checked[i.id])
+      ||state.sectionNotes[ph.id+'-obs']
+      ||state.sectionNotes[ph.id+'-act'];
+    if(hasContent) tocSections.push(ph.title);
+  });
+  if(pid==='plan1'&&(state.concern.biggest||state.concern.emotion)) tocSections.push("Client's Primary Concern");
+  tocSections.push('Recommendations & Next Steps');
+
+  font('normal',7); rgb(C.inkL);
+  const tocCols=2, tocColW=CW/tocCols;
+  tocSections.forEach((s,i)=>{
+    const col=i%tocCols, row=Math.floor(i/tocCols);
+    txt(`${i+1}.  ${s}`,LM+col*tocColW,tocY+14+row*4.5);
+  });
+
+  // ── COVER FOOTER ──
+  fill(C.gold); doc.rect(0,ph-14,6,14,'F');
+  fill([30,30,50]); doc.rect(6,ph-14,pw-6,14,'F');
+  font('normal',6.5); rgb([160,150,120]);
+  txt(practiceName+(contact?' · '+contact:''),LM,ph-7);
+  txt('Page 1',RM,ph-7,{align:'right'});
+
+  // ════════════════════════════════════════════════════════
+  // REPORT PAGES
+  // ════════════════════════════════════════════════════════
+  addPage(); // starts page 2
+
+  // ── INTRO PARAGRAPH ──
+  ck(28);
+  font('bold',11); rgb(C.ink);
+  txt('Financial Review Report',LM,y);
+  y+=5;
+  rule(y); y+=5;
+  font('normal',8.5); rgb(C.inkL);
+  const intro=`Dear ${cName},\n\nThank you for taking the time to go through your financial health session with us. This report captures everything we discussed — what we found, how we assessed it, and the specific actions we recommend you take. Please read through this carefully and reach out if you have any questions.`;
+  const introLines=spl(intro,CW);
+  introLines.forEach(l=>{ ck(5); txt(l,LM,y); y+=4.5; });
+  y+=8;
+
+  // ════════════════════════════════════════════════════════
+  // SECTIONS
+  // ════════════════════════════════════════════════════════
+  let secNum=0;
+  plan.phases.forEach((ph)=>{
+    const doneItems=ph.items.filter(i=>state.checked[i.id]);
+    const obs=state.sectionNotes[ph.id+'-obs']||'';
+    const act=state.sectionNotes[ph.id+'-act']||'';
+    if(!doneItems.length && !obs && !act) return;
+
+    secNum++;
+    ck(20);
+
+    // ── SECTION HEADER ──
+    fill(C.ink); doc.rect(LM,y,CW,11,'F');
+    fill(C.gold); doc.rect(LM,y,3.5,11,'F');
+    font('bold',10); rgb(C.white);
+    txt(`${secNum}.  ${ph.title}`,LM+8,y+7.5);
+    // Done count badge
+    fill(C.teal); doc.roundedRect(RM-28,y+2,28,7,2,2,'F');
+    font('bold',6.5); rgb(C.white);
+    txt(`${doneItems.length} / ${ph.items.length} REVIEWED`,RM-24,y+6.5);
+    y+=14;
+
+    // Quarter date if applicable
+    if(state.quarterDates&&state.quarterDates[ph.id]){
+      font('italic',7.5); rgb(C.inkM);
+      txt('Review completed: '+state.quarterDates[ph.id],LM,y);
+      y+=5;
+    }
+
+    // ── ITEMS REVIEWED (done items only — client sees only completed) ──
+    if(doneItems.length){
+      ck(8);
+      // Sub-header
+      fill(C.tealL); doc.rect(LM,y,CW,6.5,'F');
+      font('bold',7); rgb(C.teal);
+      txt('AREAS REVIEWED IN THIS SECTION',LM+3,y+4.5);
+      y+=8;
+
+      doneItems.forEach(item=>{
+        const note=state.notes[item.id]||'';
+        const rowH=note.trim() ? 14 : 7;
+        ck(rowH+4);
+
+        // Alternating subtle background
+        fill([250,249,246]); doc.rect(LM,y,CW,rowH,'F');
+        stroke(C.rule); doc.setLineWidth(0.15);
+        doc.rect(LM,y,CW,rowH,'S');
+
+        // Tick
+        fill(C.teal); doc.roundedRect(LM+2,y+1.5,4.5,4.5,1,1,'F');
+        font('bold',6); rgb(C.white);
+        txt('✓',LM+3.1,y+5);
+
+        // Item title
+        font('bold',8.5); rgb(C.ink);
+        const titleLines=spl(item.t, note.trim() ? CW-12 : CW-22);
+        titleLines.forEach((l,i)=>{ txt(l,LM+9,y+5+(i*4)); });
+
+        // Note — what was found
+        if(note.trim()){
+          fill([240,248,244]); doc.rect(LM+9,y+8,CW-12,rowH-8,'F');
+          fill(C.teal); doc.rect(LM+9,y+8,1.5,rowH-8,'F');
+          font('italic',7.5); rgb([25,70,50]);
+          const noteLines=spl('What we found: '+note,CW-20);
+          noteLines.forEach((l,i)=>{ txt(l,LM+13,y+12+(i*3.8)); });
+        }
+
+        y+=rowH+1.5;
+      });
+      y+=4;
+    }
+
+    // ── OUR ASSESSMENT ──
+    if(obs||act){
+      ck(16);
+      fill(C.bg); doc.rect(LM,y,CW,6,'F');
+      fill(C.inkL); doc.rect(LM,y,2.5,6,'F');
+      font('bold',7); rgb(C.inkL);
+      txt('OUR ASSESSMENT',LM+6,y+4.3);
+      y+=8;
+
+      const halfW=(CW/2)-3;
+
+      // Observation box
+      if(obs){
+        const obLines=spl(obs,halfW-8);
+        const obH=Math.max(16,obLines.length*4+12);
+        ck(obH+2);
+        fill(C.blueL); doc.roundedRect(LM,y,halfW,obH,2,2,'F');
+        fill(C.blue); doc.roundedRect(LM,y,halfW,5,2,2,'F');
+        font('bold',6.5); rgb(C.white);
+        txt('OBSERVATION',LM+3,y+3.5);
+        font('normal',8); rgb(C.ink);
+        obLines.forEach((l,i)=>{ txt(l,LM+3,y+10+(i*4)); });
+
+        // Action box (right column)
+        if(act){
+          const acLines=spl(act,halfW-8);
+          const acH=Math.max(16,acLines.length*4+12);
+          const acBoxH=Math.max(obH,acH);
+          fill(C.tealL); doc.roundedRect(LM+halfW+6,y,halfW,acBoxH,2,2,'F');
+          fill(C.teal); doc.roundedRect(LM+halfW+6,y,halfW,5,2,2,'F');
+          font('bold',6.5); rgb(C.white);
+          txt('ACTION RECOMMENDED',LM+halfW+9,y+3.5);
+          font('normal',8); rgb(C.ink);
+          acLines.forEach((l,i)=>{ txt(l,LM+halfW+9,y+10+(i*4)); });
+          y+=Math.max(obH,acH)+6;
+        } else {
+          y+=obH+6;
+        }
+      } else if(act){
+        // Full width action
+        const acLines=spl(act,CW-8);
+        const acH=Math.max(16,acLines.length*4+12);
+        ck(acH+2);
+        fill(C.tealL); doc.roundedRect(LM,y,CW,acH,2,2,'F');
+        fill(C.teal); doc.roundedRect(LM,y,CW,5,2,2,'F');
+        font('bold',6.5); rgb(C.white);
+        txt('ACTION RECOMMENDED',LM+3,y+3.5);
+        font('normal',8); rgb(C.ink);
+        acLines.forEach((l,i)=>{ txt(l,LM+3,y+10+(i*4)); });
+        y+=acH+6;
+      }
+    }
+
+    // Section divider
+    ck(8);
+    y+=4;
+    rule(y,[220,215,200]); y+=8;
+  });
+
+  // ════════════════════════════════════════════════════════
+  // PLAN-SPECIFIC OUTPUT SECTIONS
+  // ════════════════════════════════════════════════════════
+
+  // ── CLARITY PLAN: Key Findings Summary ──
+  if(pid==='plan1'){
+    const ins=state.outputs['ins-p1']||'';
+    const sip=state.outputs['sip-p1']||'';
+    const efund=state.outputs['efund-p1']||'';
+    const upgrade=state.outputs['upgrade-p1']||'';
+
+    if(ins||sip||efund){
+      ck(20);
+      secNum++;
+      fill(C.ink); doc.rect(LM,y,CW,11,'F');
+      fill(C.gold); doc.rect(LM,y,3.5,11,'F');
+      font('bold',10); rgb(C.white);
+      txt(`${secNum}.  Key Findings`,LM+8,y+7.5);
+      y+=16;
+
+      const findings=[
+        {label:'Insurance',icon:'🛡', val:ins},
+        {label:'SIP / Investments',icon:'📈', val:sip},
+        {label:'Emergency Fund',icon:'🏦', val:efund},
+      ].filter(f=>f.val.trim());
+
+      findings.forEach((f,i)=>{
+        const fLines=spl(f.val,CW-16);
+        const fH=Math.max(14,fLines.length*4+10);
+        ck(fH+3);
+        fill(i%2===0?[250,249,246]:[246,248,250]);
+        doc.rect(LM,y,CW,fH,'F');
+        stroke(C.rule); doc.setLineWidth(0.15); doc.rect(LM,y,CW,fH,'S');
+        fill(C.gold); doc.rect(LM,y,3,fH,'F');
+        font('bold',8); rgb(C.ink);
+        txt(f.label,LM+7,y+5.5);
+        font('normal',8); rgb(C.inkL);
+        fLines.forEach((l,li)=>{ txt(l,LM+7,y+10+(li*4)); });
+        y+=fH+2;
+      });
+      y+=6;
+    }
+
+    // Client's Primary Concern
+    if(state.concern&&(state.concern.biggest||state.concern.emotion)){
+      ck(28);
+      secNum++;
+      fill(C.amberL); doc.roundedRect(LM,y,CW,7,2,2,'F');
+      fill(C.amber); doc.rect(LM,y,3.5,7,'F');
+      font('bold',9.5); rgb(C.amber);
+      txt(`${secNum}.  Your Primary Concern`,LM+8,y+5);
+      y+=11;
+      ck(20);
+      fill([255,252,244]); doc.roundedRect(LM,y,CW,3,'F');
+      if(state.concern.biggest){
+        const cl=spl('\u201C'+state.concern.biggest+'\u201D',CW-12);
+        const cH=cl.length*5+6;
+        ck(cH+4);
+        fill([255,252,244]); doc.roundedRect(LM,y,CW,cH,2,2,'F');
+        fill(C.amber); doc.rect(LM,y,3,cH,'F');
+        font('italic',9); rgb(C.ink);
+        cl.forEach((l,i)=>{ txt(l,LM+8,y+6+(i*5)); });
+        y+=cH+4;
+      }
+      if(state.concern.emotion){
+        ck(10);
+        fill(C.amberL); doc.roundedRect(LM,y,CW,8,1,1,'F');
+        font('bold',7); rgb(C.amber);
+        txt('UNDERLYING EMOTION',LM+4,y+4);
+        font('normal',8); rgb([100,65,5]);
+        txt(state.concern.emotion,LM+4,y+8.5);
+        y+=12;
+      }
+      y+=4;
+    }
+  }
+
+  // ── COMPLETE PLAN: Plan Outputs ──
+  if(pid==='plan2'){
+    const nw=state.outputs['nw-p2']||'';
+    const risk=state.outputs['risk-p2']||'';
+    const ins=state.outputs['ins-p2']||'';
+    const beh=state.outputs['beh-p2']||'';
+
+    if(nw||risk||ins||beh){
+      ck(20);
+      secNum++;
+      fill(C.ink); doc.rect(LM,y,CW,11,'F');
+      fill(C.gold); doc.rect(LM,y,3.5,11,'F');
+      font('bold',10); rgb(C.white);
+      txt(`${secNum}.  Financial Snapshot`,LM+8,y+7.5);
+      y+=16;
+
+      const snapItems=[
+        {label:'Net Worth',val:nw},
+        {label:'Risk Profile Assigned',val:risk},
+        {label:'Insurance Gaps Found',val:ins},
+        {label:'Key Behavioural Flag',val:beh},
+      ].filter(s=>s.val.trim());
+
+      const colW2=(CW-4)/2;
+      let colY=[y,y];
+      snapItems.forEach((s,i)=>{
+        const col=i%2;
+        const sLines=spl(s.val,colW2-8);
+        const sH=Math.max(14,sLines.length*4+12);
+        ck(sH+4);
+        const bx=LM+col*(colW2+4);
+        fill([250,249,246]); doc.roundedRect(bx,colY[col],colW2,sH,1.5,1.5,'F');
+        stroke(C.rule); doc.setLineWidth(0.2); doc.roundedRect(bx,colY[col],colW2,sH,1.5,1.5,'S');
+        font('bold',7); rgb(C.inkL);
+        txt(s.label.toUpperCase(),bx+4,colY[col]+5.5);
+        rule(colY[col]+7); // mini rule
+        font('normal',8); rgb(C.ink);
+        sLines.forEach((l,li)=>{ txt(l,bx+4,colY[col]+11+(li*4)); });
+        colY[col]+=sH+4;
+      });
+      y=Math.max(colY[0],colY[1])+4;
+    }
+  }
+
+  // ── PARTNER PLAN: Year Tracker ──
+  if(pid==='plan3'){
+    const sip=state.outputs['sip-p3']||'';
+    const life=state.outputs['life-p3']||'';
+    const risk=state.outputs['risk-p3']||'';
+    const renew=state.outputs['renew-p3']||'';
+
+    if(sip||life||risk||renew){
+      ck(20);
+      secNum++;
+      fill(C.ink); doc.rect(LM,y,CW,11,'F');
+      fill(C.gold); doc.rect(LM,y,3.5,11,'F');
+      font('bold',10); rgb(C.white);
+      txt(`${secNum}.  Annual Tracker`,LM+8,y+7.5);
+      y+=16;
+
+      const trackerItems=[
+        {label:'SIPs Running (This Year)',val:sip,color:C.teal,colorL:C.tealL},
+        {label:'Key Life Changes',val:life,color:C.inkL,colorL:C.bg},
+        {label:'Biggest Risk to Progress',val:risk,color:C.amber,colorL:C.amberL},
+        {label:'Value Delivered — Renewal Note',val:renew,color:C.blue,colorL:C.blueL},
+      ].filter(t=>t.val.trim());
+
+      trackerItems.forEach(t=>{
+        const tLines=spl(t.val,CW-14);
+        const tH=Math.max(16,tLines.length*4+14);
+        ck(tH+4);
+        fill(t.colorL); doc.roundedRect(LM,y,CW,tH,2,2,'F');
+        fill(t.color); doc.roundedRect(LM,y,3.5,tH,1.5,1.5,'F');
+        font('bold',7); rgb(t.color);
+        txt(t.label.toUpperCase(),LM+8,y+6);
+        font('normal',8.5); rgb(C.ink);
+        tLines.forEach((l,i)=>{ txt(l,LM+8,y+11+(i*4.2)); });
+        y+=tH+5;
+      });
+    }
+  }
+
+  // ════════════════════════════════════════════════════════
+  // RECOMMENDATIONS & NEXT STEPS
+  // ════════════════════════════════════════════════════════
+  ck(24);
+  secNum++;
+  y+=4;
+  fill(C.ink); doc.rect(LM,y,CW,11,'F');
+  fill(C.gold); doc.rect(LM,y,3.5,11,'F');
+  font('bold',10); rgb(C.white);
+  txt(`${secNum}.  Recommendations & Your Next Steps`,LM+8,y+7.5);
+  y+=14;
+
+  if(pid==='plan1'){
+    const steps=[
+      state.outputs['pri1-p1']||'',
+      state.outputs['pri2-p1']||'',
+      state.outputs['pri3-p1']||''
+    ].filter(s=>s.trim());
+
+    if(steps.length){
+      ck(10);
+      font('normal',8); rgb(C.inkL);
+      txt('These are the three most important actions for you to take within the next 30 days:',LM,y);
+      y+=7;
+
+      steps.forEach((step,i)=>{
+        const stLines=spl(step,CW-22);
+        const stH=Math.max(14,stLines.length*4.5+8);
+        ck(stH+4);
+        // Number circle
+        fill(C.gold); doc.circle(LM+5,y+stH/2,5,'F');
+        font('bold',9); rgb(C.ink);
+        txt(String(i+1),LM+5-(i<1?1.5:2.5),y+stH/2+2);
+        // Step card
+        fill(i%2===0?C.goldP:[250,249,246]);
+        doc.roundedRect(LM+13,y,CW-13,stH,2,2,'F');
+        stroke(C.goldL); doc.setLineWidth(0.3); doc.roundedRect(LM+13,y,CW-13,stH,2,2,'S');
+        font('normal',9); rgb(C.ink);
+        stLines.forEach((l,li)=>{ txt(l,LM+17,y+6+(li*4.5)); });
+        y+=stH+5;
+      });
+    } else {
+      font('italic',8.5); rgb(C.inkM);
+      txt('Your advisor will discuss specific next steps with you at the end of your session.',LM,y);
+      y+=8;
+    }
+
+    // Upgrade prompt
+    const upg=state.outputs['upgrade-p1']||'';
+    if(upg.trim()){
+      ck(20);
+      y+=4;
+      fill(C.blueL); doc.roundedRect(LM,y,CW,16,2,2,'F');
+      fill(C.blue); doc.roundedRect(LM,y,3.5,16,1.5,1.5,'F');
+      font('bold',7); rgb(C.blue);
+      txt('NEXT ENGAGEMENT — COMPLETE FINANCIAL PLAN',LM+8,y+5.5);
+      font('normal',8); rgb(C.ink);
+      const upgradeLines=spl(upg,CW-14);
+      upgradeLines.forEach((l,i)=>{ txt(l,LM+8,y+10+(i*3.8)); });
+      y+=18;
+    }
+  }
+
+  if(pid==='plan2'){
+    const impl=state.outputs['impl-p2']||'';
+    if(impl.trim()){
+      // Parse numbered lines if present
+      const lines=impl.split('\n').filter(l=>l.trim());
+      lines.forEach((line,i)=>{
+        const lLines=spl(line.trim(),CW-22);
+        const lH=Math.max(12,lLines.length*4.2+7);
+        ck(lH+3);
+        fill(i%2===0?C.tealL:[248,252,250]);
+        doc.roundedRect(LM,y,CW,lH,1.5,1.5,'F');
+        stroke(C.tealL); doc.setLineWidth(0.2); doc.roundedRect(LM,y,CW,lH,1.5,1.5,'S');
+        fill(C.teal); doc.rect(LM,y,3,lH,'F');
+        font('normal',8.5); rgb(C.ink);
+        lLines.forEach((l,li)=>{ txt(l,LM+7,y+5.5+(li*4.2)); });
+        y+=lH+3;
+      });
+    } else {
+      font('italic',8.5); rgb(C.inkM);
+      txt('Implementation sequence to be confirmed with your advisor.',LM,y);
+      y+=8;
+    }
+
+    const partner=state.outputs['partner-p2']||'';
+    if(partner.trim()){
+      ck(20);
+      y+=4;
+      fill(C.blueL); doc.roundedRect(LM,y,CW,16,2,2,'F');
+      fill(C.blue); doc.roundedRect(LM,y,3.5,16,1.5,1.5,'F');
+      font('bold',7); rgb(C.blue);
+      txt('WHY THE PARTNER PLAN MAKES SENSE FOR YOU',LM+8,y+5.5);
+      font('normal',8); rgb(C.ink);
+      const pLines=spl(partner,CW-14);
+      pLines.forEach((l,i)=>{ txt(l,LM+8,y+10+(i*3.8)); });
+      y+=18;
+    }
+  }
+
+  if(pid==='plan3'){
+    ck(14);
+    font('normal',8.5); rgb(C.inkL);
+    const p3msg='Your quarterly review cycle keeps your plan on track through life\'s changes — income shifts, market movements, new goals. Review your quarterly action items above and confirm your next review date with your advisor.';
+    const p3Lines=spl(p3msg,CW);
+    p3Lines.forEach(l=>{ txt(l,LM,y); y+=4.5; });
+    y+=6;
+  }
+
+  // ── SCHEDULE YOUR NEXT SESSION ──
+  ck(22);
+  y+=6;
+  fill(C.tealL); doc.roundedRect(LM,y,CW,18,2,2,'F');
+  fill(C.teal); doc.rect(LM,y,3.5,18,'F');
+  fill(C.teal); doc.roundedRect(LM,y,CW,6,2,2,'F');
+  font('bold',8); rgb(C.white);
+  txt('Schedule Your Next Session',LM+8,y+4.3);
+  font('normal',8.5); rgb(C.ink);
+  const nextMap={
+    plan1:'We recommend moving to the Complete Financial Plan for a full analysis, goal calculations, and a detailed implementation roadmap. Ask us about timing and fees.',
+    plan2:'Your next step is an implementation review in 2 weeks. We also recommend the Partner Plan for ongoing quarterly accountability and annual reviews.',
+    plan3:'Please book your next quarterly review now. Consistent reviews are what separate clients who reach their goals from those who drift.'
+  };
+  const nextLines=spl(nextMap[pid],CW-14);
+  nextLines.forEach((l,i)=>{ txt(l,LM+8,y+10+(i*4)); });
+  y+=22;
+
+  // ── FLAGGED FOLLOW-UP ITEMS ──
+  const flagged=Object.entries(state.flags).filter(([k,v])=>v);
+  if(flagged.length){
+    ck(16);
+    y+=4;
+    const lookup={};
+    Object.values(PLANS).forEach(p=>p.phases.forEach(ph=>ph.items.forEach(item=>{lookup[item.id]={t:item.t,note:state.notes[item.id]||''};})));
+
+    fill(C.amberL); doc.roundedRect(LM,y,CW,7,2,2,'F');
+    fill(C.amber); doc.rect(LM,y,3.5,7,'F');
+    font('bold',8); rgb(C.amber);
+    txt('Items Requiring Your Action / Documents Needed',LM+8,y+5);
+    y+=10;
+
+    flagged.forEach(([id])=>{
+      const info=lookup[id]||{t:id,note:''};
+      const rowLines=spl(info.t,CW-16);
+      const rH=Math.max(8,rowLines.length*3.8+6);
+      ck(rH+2);
+      fill(C.amberL); doc.roundedRect(LM,y,CW,rH,1,1,'F');
+      font('bold',7); rgb(C.amber);
+      txt('PENDING',LM+3,y+4);
+      font('normal',8); rgb(C.ink);
+      rowLines.forEach((l,li)=>{ txt(l,LM+20,y+4+(li*3.8)); });
+      if(info.note) {
+        font('italic',7); rgb(C.inkM);
+        const nLines=spl(info.note,CW-25);
+        nLines.forEach((l,li)=>{ txt(l,LM+20,y+8+(li*3.5)); });
+      }
+      y+=rH+2;
+    });
+    y+=4;
+  }
+
+  // ════════════════════════════════════════════════════════
+  // LAST PAGE — CLOSING
+  // ════════════════════════════════════════════════════════
+  ck(50);
+  y+=8;
+
+  // Signature / sign-off block
+  fill(C.bg); doc.roundedRect(LM,y,CW,30,2,2,'F');
+  stroke(C.rule); doc.setLineWidth(0.3); doc.roundedRect(LM,y,CW,30,2,2,'S');
+  fill(C.gold); doc.rect(LM,y,3.5,30,'F');
+  font('bold',8); rgb(C.inkL);
+  txt('PREPARED BY',LM+8,y+7);
+  font('bold',11); rgb(C.ink);
+  txt(plannerName||practiceName,LM+8,y+13);
+  font('normal',7.5); rgb(C.inkM);
+  txt(practiceName,LM+8,y+18);
+  if(contact){ txt(contact,LM+8,y+22.5); }
+
+  // Signature line
+  stroke(C.rule); doc.setLineWidth(0.4);
+  doc.line(RM-55,y+24,RM-4,y+24);
+  font('normal',6.5); rgb(C.inkM);
+  txt('Signature',RM-30,y+28,{align:'center'});
+  y+=36;
+
+  // ── DISCLAIMER ──
+  const dlY=ph-26;
+  fill(C.bg); doc.rect(0,dlY,pw,26,'F');
+  fill(C.rule); doc.rect(0,dlY,pw,0.4,'F');
+  font('bold',6.5); rgb(C.inkM);
+  txt('DISCLAIMER',LM,dlY+5);
+  font('normal',6.5); rgb([120,115,140]);
+  const dlLines=spl(disclaimer,CW);
+  dlLines.forEach((l,i)=>{ doc.text(l,LM,dlY+9+(i*3.2)); });
+  if(contact){
+    font('normal',6.5); rgb([140,130,110]);
+    txt(contact,RM,dlY+5,{align:'right'});
+  }
+
+  renderFooter();
+
+  const safeName=(cName||'client').replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-]/g,'');
+  doc.save(`${plan.name.replace(/\s+/g,'-')}-${safeName}-${state.client.date||'undated'}.pdf`);
+  toast('✓ PDF exported — '+plan.name);
+}
+
+// ─── TOAST ────────────────────────────────────────────────────────────────
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+// ─── CLOSE OVERLAYS ON CLICK OUTSIDE ─────────────────────────────────────
+document.querySelectorAll('.overlay').forEach(el=>{
+  el.addEventListener('click',e=>{if(e.target===el) el.classList.remove('open');});
+});
+
+init();
+</script>
+</body>
+</html>
