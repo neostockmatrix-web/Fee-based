@@ -140,7 +140,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);font
 .obs-lbl-chip{display:inline-block;font-size:9px;font-weight:600;padding:1px 7px;border-radius:20px;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}
 .chip-obs{background:#e6f1fb;color:#0c447c}
 .chip-act{background:var(--teal-l);color:var(--teal)}
-.sec-obs-panel textarea{width:100%;border:1px solid var(--bdr);border-radius:5px;padding:7px 9px;font-family:'DM Sans',sans-serif;font-size:11.5px;color:var(--ink);resize:vertical;min-height:52px;outline:none;background:#fff}
+.sec-obs-panel textarea{width:100%;border:1px solid var(--bdr);border-radius:5px;padding:7px 9px;font-family:'DM Sans',sans-serif;font-size:11.5px;color:var(--ink);resize:vertical;min-height:84px;outline:none;background:#fff}
 .sec-obs-panel textarea:focus{border-color:var(--teal)}
 
 /* ITEMS */
@@ -180,6 +180,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);font
 .item-note-panel textarea{width:100%;border:1px solid var(--bdr);border-radius:5px;padding:7px 9px;font-family:'DM Sans',sans-serif;font-size:11.5px;color:var(--ink);resize:vertical;min-height:50px;outline:none;background:#fff}
 .item-note-panel textarea:focus{border-color:var(--gold)}
 .note-hint{font-size:10px;color:var(--ink-m);margin-bottom:4px;font-style:italic}
+.field-help{font-size:10px;color:var(--ink-m);line-height:1.35;margin:2px 0 6px;font-style:italic}
 
 /* BIGGEST CONCERN */
 .concern-section{background:var(--amber-l);border:2px solid var(--amber-b);border-radius:var(--r);padding:14px 18px;margin-bottom:12px}
@@ -417,6 +418,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);font
         <div class="obs-grid">
           <div class="obs-field full">
             <label>3 Priority actions (numbered, specific, actionable within 30 days)</label>
+            <div class="field-help">These three fields feed the numbered Recommendation cards in the client PDF. Checklist item notes are separate and do not auto-fill these actions.</div>
             <div class="priority-inputs">
               <div class="priority-row"><div class="priority-num">1</div><input type="text" id="pri1-p1" placeholder="e.g. Buy ₹1 Cr term plan immediately — use PolicyBazaar, 30-year tenure"></div>
               <div class="priority-row"><div class="priority-num">2</div><input type="text" id="pri2-p1" placeholder="e.g. Start ₹5,000/month SIP for emergency fund — liquid fund"></div>
@@ -626,12 +628,12 @@ const PLANS = {
         {id:"1e2", t:"Approximate timelines for each goal", d:"5 years? 10? 20? Just a rough horizon — no SIP calculations needed here.", tag:"planner"},
       ]},
       { id:"p1g", title:"G — Output (what client takes home)", items:[
-        {id:"1g1", t:"Write 3 priority action points", d:"Numbered. Specific. Actionable within 30 days.", tag:"planner"},
-        {id:"1g2", t:"Insurance observation noted", d:"1–2 lines: under-covered, wrong product, or adequate.", tag:"planner"},
-        {id:"1g3", t:"SIP / investment observation noted", d:"Investing systematically? Too little? Wrong category?", tag:"planner"},
-        {id:"1g4", t:"Emergency fund observation noted", d:"Do they have 3–6 months expenses in liquid savings?", tag:"planner"},
-        {id:"1g5", t:"Deliver brief written summary (1 page max)", d:"Plain language. No jargon. Not a 10-page report — that's the Complete Plan.", tag:"planner"},
-        {id:"1g6", t:"Send invoice ₹2,500 and collect payment", d:"", tag:"admin"},
+        {id:"1g1", t:"Write 3 priority action points", d:"Numbered. Specific. Actionable within 30 days.", tag:"planner", internal:true},
+        {id:"1g2", t:"Insurance observation noted", d:"1–2 lines: under-covered, wrong product, or adequate.", tag:"planner", internal:true},
+        {id:"1g3", t:"SIP / investment observation noted", d:"Investing systematically? Too little? Wrong category?", tag:"planner", internal:true},
+        {id:"1g4", t:"Emergency fund observation noted", d:"Do they have 3–6 months expenses in liquid savings?", tag:"planner", internal:true},
+        {id:"1g5", t:"Deliver brief written summary (1 page max)", d:"Plain language. No jargon. Not a 10-page report — that's the Complete Plan.", tag:"planner", internal:true},
+        {id:"1g6", t:"Send invoice ₹2,500 and collect payment", d:"", tag:"admin", internal:true},
       ]},
     ]
   },
@@ -1006,11 +1008,13 @@ function buildSectionObsPanel(phId, phTitle){
       <div class="sec-obs-field">
         <span class="obs-lbl-chip chip-obs">Observation</span>
         <label>What did you find?</label>
+        <div class="field-help">Use complete client-facing sentences. This text appears in the PDF.</div>
         <textarea id="secobs-${phId}" placeholder="e.g. Client has ₹75L life cover vs ₹1.2Cr needed..." oninput="saveSectionNote('${phId}','obs',this.value)">${state.sectionNotes[phId+'-obs']||''}</textarea>
       </div>
       <div class="sec-obs-field">
         <span class="obs-lbl-chip chip-act">Action recommended</span>
         <label>What should be done?</label>
+        <div class="field-help">Write the action as the client should read it, not as an internal reminder.</div>
         <textarea id="secact-${phId}" placeholder="e.g. Buy additional ₹50L term plan immediately..." oninput="saveSectionNote('${phId}','act',this.value)">${state.sectionNotes[phId+'-act']||''}</textarea>
       </div>
     </div>`;
@@ -1394,6 +1398,15 @@ function generatePDF(pid){
       return idx<arr.length-1 ? lines.concat(['']) : lines;
     });
   }
+  function splLines(text,w){
+    return String(text||'').split(/\n/).flatMap(line=>line.trim()?spl(line,w):['']);
+  }
+  function drawTick(x,yy){
+    stroke(C.white);
+    doc.setLineWidth(0.55);
+    doc.line(x+1.1,yy+3.5,x+2.0,yy+4.3);
+    doc.line(x+2.0,yy+4.3,x+3.7,yy+1.6);
+  }
 
   function addPage(){
     pageNum++;
@@ -1540,7 +1553,7 @@ function generatePDF(pid){
 
   const tocSections=[];
   plan.phases.forEach(ph=>{
-    const hasContent=ph.items.some(i=>state.checked[i.id])
+    const hasContent=ph.items.some(i=>!i.internal&&state.checked[i.id])
       ||state.sectionNotes[ph.id+'-obs']
       ||state.sectionNotes[ph.id+'-act'];
     if(hasContent) tocSections.push(ph.title);
@@ -1550,9 +1563,15 @@ function generatePDF(pid){
 
   font('normal',7); rgb(C.inkL);
   const tocCols=2, tocColW=CW/tocCols;
-  tocSections.forEach((s,i)=>{
+  const tocRowGap=4.5;
+  const maxTocRows=Math.max(1,Math.floor((ph-22-(tocY+14))/tocRowGap));
+  const maxTocItems=maxTocRows*tocCols;
+  const visibleToc=tocSections.length>maxTocItems
+    ? tocSections.slice(0,Math.max(0,maxTocItems-1)).concat([`+ ${tocSections.length-maxTocItems+1} more sections in report`])
+    : tocSections;
+  visibleToc.forEach((s,i)=>{
     const col=i%tocCols, row=Math.floor(i/tocCols);
-    txt(`${i+1}.  ${s}`,LM+col*tocColW,tocY+14+row*4.5);
+    txt(`${i+1}.  ${s}`,LM+col*tocColW,tocY+14+row*tocRowGap);
   });
 
   // ── COVER FOOTER ──
@@ -1584,7 +1603,8 @@ function generatePDF(pid){
   // ════════════════════════════════════════════════════════
   let secNum=0;
   plan.phases.forEach((ph)=>{
-    const doneItems=ph.items.filter(i=>state.checked[i.id]);
+    const clientItems=ph.items.filter(i=>!i.internal);
+    const doneItems=clientItems.filter(i=>state.checked[i.id]);
     const obs=state.sectionNotes[ph.id+'-obs']||'';
     const act=state.sectionNotes[ph.id+'-act']||'';
     if(!doneItems.length && !obs && !act) return;
@@ -1600,7 +1620,7 @@ function generatePDF(pid){
     // Done count badge
     fill(C.teal); doc.roundedRect(RM-28,y+2,28,7,2,2,'F');
     font('bold',6.5); rgb(C.white);
-    txt(`${doneItems.length} / ${ph.items.length} REVIEWED`,RM-24,y+6.5);
+    txt(`${doneItems.length} / ${clientItems.length} REVIEWED`,RM-24,y+6.5);
     y+=14;
 
     // Quarter date if applicable
@@ -1621,7 +1641,12 @@ function generatePDF(pid){
 
       doneItems.forEach(item=>{
         const note=state.notes[item.id]||'';
-        const rowH=note.trim() ? 14 : 7;
+        const titleLines=spl(item.t,CW-22);
+        const noteLines=note.trim()?splLines(note,CW-20):[];
+        const titleBlockH=Math.max(7,titleLines.length*4+3);
+        const noteTopOffset=titleBlockH+1;
+        const noteH=noteLines.length?Math.max(7,noteLines.length*3.8+4):0;
+        const rowH=noteLines.length ? noteTopOffset+noteH+2 : titleBlockH;
         ck(rowH+4);
 
         // Alternating subtle background
@@ -1629,23 +1654,21 @@ function generatePDF(pid){
         stroke(C.rule); doc.setLineWidth(0.15);
         doc.rect(LM,y,CW,rowH,'S');
 
-        // Tick
+        // Tick, drawn manually because built-in jsPDF fonts do not include ✓.
         fill(C.teal); doc.roundedRect(LM+2,y+1.5,4.5,4.5,1,1,'F');
-        font('bold',6); rgb(C.white);
-        txt('✓',LM+3.1,y+5);
+        drawTick(LM+2,y+1.5);
 
         // Item title
         font('bold',8.5); rgb(C.ink);
-        const titleLines=spl(item.t, note.trim() ? CW-12 : CW-22);
         titleLines.forEach((l,i)=>{ txt(l,LM+9,y+5+(i*4)); });
 
         // Note — what was found
-        if(note.trim()){
-          fill([240,248,244]); doc.rect(LM+9,y+8,CW-12,rowH-8,'F');
-          fill(C.teal); doc.rect(LM+9,y+8,1.5,rowH-8,'F');
+        if(noteLines.length){
+          const noteY=y+noteTopOffset;
+          fill([240,248,244]); doc.rect(LM+9,noteY,CW-12,noteH,'F');
+          fill(C.teal); doc.rect(LM+9,noteY,1.5,noteH,'F');
           font('italic',7.5); rgb([25,70,50]);
-          const noteLines=spl('What we found: '+note,CW-20);
-          noteLines.forEach((l,i)=>{ txt(l,LM+13,y+12+(i*3.8)); });
+          noteLines.forEach((l,i)=>{ if(l) txt(l,LM+13,noteY+4+(i*3.8)); });
         }
 
         y+=rowH+1.5;
@@ -1985,29 +2008,32 @@ function generatePDF(pid){
   }
 
   // ── SCHEDULE YOUR NEXT SESSION ──
-  ck(22);
   y+=6;
-  fill(C.tealL); doc.roundedRect(LM,y,CW,18,2,2,'F');
-  fill(C.teal); doc.rect(LM,y,3.5,18,'F');
-  font('bold',8); rgb(C.teal);
-  txt('Schedule Your Next Session',LM+8,y+5.5);
-  font('normal',8.5); rgb(C.ink);
   const nextMap={
     plan1:'We recommend moving to the Complete Financial Plan for a full analysis, goal calculations, and a detailed implementation roadmap. Ask us about timing and fees.',
     plan2:'Your next step is an implementation review in 2 weeks. We also recommend the Partner Plan for ongoing quarterly accountability and annual reviews.',
     plan3:'Please book your next quarterly review now. Consistent reviews are what separate clients who reach their goals from those who drift.'
   };
   const nextLines=spl(nextMap[pid],CW-14);
-  nextLines.forEach((l,i)=>{ txt(l,LM+8,y+10+(i*4)); });
-  y+=22;
+  const nextH=Math.max(20, nextLines.length*4+13);
+  ck(nextH+6);
+  fill(C.tealL); doc.roundedRect(LM,y,CW,nextH,2,2,'F');
+  fill(C.teal); doc.rect(LM,y,3.5,nextH,'F');
+  font('bold',8); rgb(C.teal);
+  txt('Schedule Your Next Session',LM+8,y+5.5);
+  font('normal',8.5); rgb(C.ink);
+  nextLines.forEach((l,i)=>{ txt(l,LM+8,y+11+(i*4)); });
+  y+=nextH+4;
 
   // ── FLAGGED FOLLOW-UP ITEMS ──
-  const flagged=Object.entries(state.flags).filter(([k,v])=>v);
+  const lookup={};
+  Object.values(PLANS).forEach(p=>p.phases.forEach(ph=>ph.items.forEach(item=>{
+    if(!item.internal) lookup[item.id]={t:item.t,note:state.notes[item.id]||''};
+  })));
+  const flagged=Object.entries(state.flags).filter(([k,v])=>v&&lookup[k]);
   if(flagged.length){
     ck(16);
     y+=4;
-    const lookup={};
-    Object.values(PLANS).forEach(p=>p.phases.forEach(ph=>ph.items.forEach(item=>{lookup[item.id]={t:item.t,note:state.notes[item.id]||''};})));
 
     fill(C.amberL); doc.roundedRect(LM,y,CW,7,2,2,'F');
     fill(C.amber); doc.rect(LM,y,3.5,7,'F');
@@ -2018,17 +2044,18 @@ function generatePDF(pid){
     flagged.forEach(([id])=>{
       const info=lookup[id]||{t:id,note:''};
       const rowLines=spl(info.t,CW-16);
-      const rH=Math.max(8,rowLines.length*3.8+6);
+      const nLines=info.note?splLines(info.note,CW-25):[];
+      const rH=Math.max(8,rowLines.length*3.8+6+(nLines.length?nLines.length*3.5+3:0));
       ck(rH+2);
       fill(C.amberL); doc.roundedRect(LM,y,CW,rH,1,1,'F');
       font('bold',7); rgb(C.amber);
       txt('PENDING',LM+3,y+4);
       font('normal',8); rgb(C.ink);
       rowLines.forEach((l,li)=>{ txt(l,LM+20,y+4+(li*3.8)); });
-      if(info.note) {
+      if(nLines.length) {
         font('italic',7); rgb(C.inkM);
-        const nLines=spl(info.note,CW-25);
-        nLines.forEach((l,li)=>{ txt(l,LM+20,y+8+(li*3.5)); });
+        const noteStart=y+8+(rowLines.length-1)*3.8;
+        nLines.forEach((l,li)=>{ if(l) txt(l,LM+20,noteStart+(li*3.5)); });
       }
       y+=rH+2;
     });
@@ -2047,11 +2074,13 @@ function generatePDF(pid){
   fill(C.gold); doc.rect(LM,y,3.5,30,'F');
   font('bold',8); rgb(C.inkL);
   txt('PREPARED BY',LM+8,y+7);
+  const preparedBy=plannerName||practiceName;
   font('bold',11); rgb(C.ink);
-  txt(plannerName||practiceName,LM+8,y+13);
+  txt(preparedBy,LM+8,y+13);
   font('normal',7.5); rgb(C.inkM);
-  txt(practiceName,LM+8,y+18);
-  if(contact){ txt(contact,LM+8,y+22.5); }
+  const showPractice=practiceName&&practiceName!==preparedBy;
+  if(showPractice) txt(practiceName,LM+8,y+18);
+  if(contact){ txt(contact,LM+8,showPractice?y+22.5:y+18); }
 
   // Signature line
   stroke(C.rule); doc.setLineWidth(0.4);
