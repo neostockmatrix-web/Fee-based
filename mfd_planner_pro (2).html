@@ -808,6 +808,17 @@ function applyStateToUI(){
   const outIds = ['ins-p1','sip-p1','efund-p1','upgrade-p1','nw-p2','risk-p2','ins-p2','beh-p2','impl-p2','partner-p2','sip-p3','life-p3','risk-p3','renew-p3'];
   outIds.forEach(id=>{ const el=document.getElementById(id); if(el&&state.outputs[id]) el.value=state.outputs[id]; });
   ['pri1-p1','pri2-p1','pri3-p1'].forEach(id=>{ const el=document.getElementById(id); if(el&&state.outputs[id]) el.value=state.outputs[id]; });
+  // Section observation/action notes
+  if(state.sectionNotes){
+    Object.entries(state.sectionNotes).forEach(([key,val])=>{
+      const match=key.match(/^(.*)-(obs|act)$/);
+      if(!match) return;
+      const el=document.getElementById(`sec${match[2]}-${match[1]}`);
+      if(el) el.value=val||'';
+      const btn=document.getElementById('obsBtn-'+match[1]);
+      if(btn) btn.classList.toggle('has-note',!!((state.sectionNotes[match[1]+'-obs']||state.sectionNotes[match[1]+'-act']||'').trim()));
+    });
+  }
   // Concern
   if(state.concern){
     const cb=document.getElementById('concern-biggest'); if(cb) cb.value=state.concern.biggest||'';
@@ -1357,13 +1368,32 @@ function generatePDF(pid){
   function stroke(c){ doc.setDrawColor(...c); }
   function font(style,size){ doc.setFont('helvetica',style); doc.setFontSize(size); }
   function txt(text,x,yy,opts){ doc.text(text,x,yy,opts||{}); }
-  function rule(yy,alpha){ 
-    doc.setDrawColor(alpha||180,alpha?alpha:165,alpha?alpha:140); 
-    doc.setLineWidth(0.2); 
-    doc.line(LM,yy,RM,yy); 
+  function rule(yy,color){
+    const c=Array.isArray(color) ? color : [color||180, color?color:165, color?color:140];
+    doc.setDrawColor(...c);
+    doc.setLineWidth(0.2);
+    doc.line(LM,yy,RM,yy);
   }
-  function ck(n){ if(y+n>ph-24) addPage(); }
+  function colRule(x1,x2,yy,color){
+    const c=Array.isArray(color) ? color : (color ? [color,color,color] : C.rule);
+    doc.setDrawColor(...c);
+    doc.setLineWidth(0.2);
+    doc.line(x1,yy,x2,yy);
+  }
+  function filledCircle(cx,cy,r){
+    fill(C.gold);
+    if(typeof doc.circle==='function') doc.circle(cx,cy,r,'F');
+    else if(typeof doc.ellipse==='function') doc.ellipse(cx,cy,r,r,'F');
+    else doc.roundedRect(cx-r,cy-r,r*2,r*2,r,r,'F');
+  }
+  function ck(n){ if(y+n>ph-24){ addPage(); return true; } return false; }
   function spl(text,w){ return doc.splitTextToSize(String(text||''),w); }
+  function splParagraphs(text,w){
+    return String(text||'').split(/\n\s*\n/).flatMap((para,idx,arr)=>{
+      const lines=spl(para.replace(/\n/g,' '),w);
+      return idx<arr.length-1 ? lines.concat(['']) : lines;
+    });
+  }
 
   function addPage(){
     pageNum++;
@@ -1399,7 +1429,6 @@ function generatePDF(pid){
   // PAGE 1 — COVER
   // ════════════════════════════════════════════════════════
   pageNum=1;
-  renderFooter();
 
   // Full-page dark background
   fill(C.ink); doc.rect(0,0,pw,ph,'F');
@@ -1504,7 +1533,7 @@ function generatePDF(pid){
 
   // ── TABLE OF CONTENTS ──
   const tocY=scopeY+28;
-  fill(C.bg); doc.roundedRect(LM,tocY,CW,8,'F');
+  fill(C.bg); doc.roundedRect(LM,tocY,CW,8,1,1,'F');
   fill(C.inkL); doc.rect(LM,tocY,CW,0.4,'F');
   font('bold',7); rgb(C.inkL);
   txt('CONTENTS OF THIS REPORT',LM,tocY+5.5);
@@ -1546,8 +1575,8 @@ function generatePDF(pid){
   rule(y); y+=5;
   font('normal',8.5); rgb(C.inkL);
   const intro=`Dear ${cName},\n\nThank you for taking the time to go through your financial health session with us. This report captures everything we discussed — what we found, how we assessed it, and the specific actions we recommend you take. Please read through this carefully and reach out if you have any questions.`;
-  const introLines=spl(intro,CW);
-  introLines.forEach(l=>{ ck(5); txt(l,LM,y); y+=4.5; });
+  const introLines=splParagraphs(intro,CW);
+  introLines.forEach(l=>{ ck(5); if(l) txt(l,LM,y); y+=l?4.5:3; });
   y+=8;
 
   // ════════════════════════════════════════════════════════
@@ -1680,7 +1709,7 @@ function generatePDF(pid){
     // Section divider
     ck(8);
     y+=4;
-    rule(y,[220,215,200]); y+=8;
+    rule(y,C.rule); y+=8;
   });
 
   // ════════════════════════════════════════════════════════
@@ -1736,7 +1765,7 @@ function generatePDF(pid){
       txt(`${secNum}.  Your Primary Concern`,LM+8,y+5);
       y+=11;
       ck(20);
-      fill([255,252,244]); doc.roundedRect(LM,y,CW,3,'F');
+      fill([255,252,244]); doc.roundedRect(LM,y,CW,3,1,1,'F');
       if(state.concern.biggest){
         const cl=spl('\u201C'+state.concern.biggest+'\u201D',CW-12);
         const cH=cl.length*5+6;
@@ -1789,13 +1818,16 @@ function generatePDF(pid){
         const col=i%2;
         const sLines=spl(s.val,colW2-8);
         const sH=Math.max(14,sLines.length*4+12);
-        ck(sH+4);
+        if(colY[col]+sH+4>ph-24){
+          addPage();
+          colY=[y,y];
+        }
         const bx=LM+col*(colW2+4);
         fill([250,249,246]); doc.roundedRect(bx,colY[col],colW2,sH,1.5,1.5,'F');
         stroke(C.rule); doc.setLineWidth(0.2); doc.roundedRect(bx,colY[col],colW2,sH,1.5,1.5,'S');
         font('bold',7); rgb(C.inkL);
         txt(s.label.toUpperCase(),bx+4,colY[col]+5.5);
-        rule(colY[col]+7); // mini rule
+        colRule(bx+4,bx+colW2-4,colY[col]+7,C.rule); // mini rule
         font('normal',8); rgb(C.ink);
         sLines.forEach((l,li)=>{ txt(l,bx+4,colY[col]+11+(li*4)); });
         colY[col]+=sH+4;
@@ -1872,7 +1904,7 @@ function generatePDF(pid){
         const stH=Math.max(14,stLines.length*4.5+8);
         ck(stH+4);
         // Number circle
-        fill(C.gold); doc.circle(LM+5,y+stH/2,5,'F');
+        filledCircle(LM+5,y+stH/2,5);
         font('bold',9); rgb(C.ink);
         txt(String(i+1),LM+5-(i<1?1.5:2.5),y+stH/2+2);
         // Step card
@@ -1957,9 +1989,8 @@ function generatePDF(pid){
   y+=6;
   fill(C.tealL); doc.roundedRect(LM,y,CW,18,2,2,'F');
   fill(C.teal); doc.rect(LM,y,3.5,18,'F');
-  fill(C.teal); doc.roundedRect(LM,y,CW,6,2,2,'F');
-  font('bold',8); rgb(C.white);
-  txt('Schedule Your Next Session',LM+8,y+4.3);
+  font('bold',8); rgb(C.teal);
+  txt('Schedule Your Next Session',LM+8,y+5.5);
   font('normal',8.5); rgb(C.ink);
   const nextMap={
     plan1:'We recommend moving to the Complete Financial Plan for a full analysis, goal calculations, and a detailed implementation roadmap. Ask us about timing and fees.',
@@ -2030,8 +2061,10 @@ function generatePDF(pid){
   y+=36;
 
   // ── DISCLAIMER ──
-  const dlY=ph-26;
-  fill(C.bg); doc.rect(0,dlY,pw,26,'F');
+  if(y>ph-54) addPage();
+  const dlY=ph-40;
+  const dlH=28;
+  fill(C.bg); doc.rect(0,dlY,pw,dlH,'F');
   fill(C.rule); doc.rect(0,dlY,pw,0.4,'F');
   font('bold',6.5); rgb(C.inkM);
   txt('DISCLAIMER',LM,dlY+5);
